@@ -42,7 +42,7 @@ export function InfoCard({
                 {trend.value}%
               </span>
               <span className="text-xs text-muted-foreground ml-1">
-                vs ano anterior
+                Vs ano anterior
               </span>
             </div>
           )}

@@ -87,9 +87,6 @@ const Workshops = () => {
         <TabsList>
           <TabsTrigger value="lista">Lista de Oficinas</TabsTrigger>
           <TabsTrigger value="adicionar">Nova Oficina</TabsTrigger>
-          <TabsTrigger value="participantes">
-            Adicionar Participantes
-          </TabsTrigger>
         </TabsList>
         <TabsContent value="lista">
           <DashboardTable
@@ -129,38 +126,6 @@ const Workshops = () => {
                 <Input placeholder="Capacidade Máxima" type="number" disabled />
                 <Input placeholder="Nome do Facilitador" disabled />
                 <Button disabled>Criar Oficina</Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="participantes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Adicionar Participante à Oficina</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-4">
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Oficina" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="artes">Artes Manuais</SelectItem>
-                    <SelectItem value="musica">Musicoterapia</SelectItem>
-                    <SelectItem value="yoga">Yoga</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar Paciente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ana">Ana Oliveira</SelectItem>
-                    <SelectItem value="pedro">Pedro Costa</SelectItem>
-                    <SelectItem value="maria">Maria Silva</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button disabled>Adicionar Participante</Button>
               </form>
             </CardContent>
           </Card>
