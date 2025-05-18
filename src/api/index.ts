@@ -5,7 +5,7 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
   const token = localStorage.getItem("bearerToken");
 
   const instance = axios.create({
-    baseURL: "http://localhost:8080",
+    baseURL: "https://hefc-backend-production.up.railway.app",
     headers: {
       Authorization: `Bearer ${token}`,
     },

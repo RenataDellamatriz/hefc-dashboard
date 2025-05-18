@@ -109,11 +109,6 @@ const Login = () => {
               </Button>
             </form>
           </Form>
-
-          <div className="text-sm text-muted-foreground mt-2 text-center">
-            email: admin@email.com <br />
-            senha: admin123
-          </div>
         </CardContent>
       </Card>
     </div>
