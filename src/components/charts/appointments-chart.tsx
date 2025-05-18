@@ -1,23 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-
-const data = [
-  { name: "Pessoas com câncer", value: 55 },
-  { name: "Familiares", value: 53 },
-  { name: "Outros diagnósticos", value: 174 },
-];
+import { getAppointmentsPieData } from "@/lib/utils";
+import { Appointment } from "@/types/appointment";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const COLORS = ["#F26419", "#F6AE2D", "#33658A"];
 
-export function AppointmentsChart() {
+export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
+  cancer: "Pessoas com câncer",
+  family: "Familiares",
+  other: "Outros diagnósticos",
+};
+
+export function AppointmentsChart({
+  appointments,
+}: {
+  appointments: Appointment[];
+}) {
+    const data = getAppointmentsPieData(appointments);
+
   return (
-<Card className="col-span-12 md:col-span-3 w-full">
+    <Card className="col-span-12 md:col-span-3">
       <CardHeader>
         <CardTitle>Atendimentos por Tipo</CardTitle>
       </CardHeader>
@@ -34,7 +36,10 @@ export function AppointmentsChart() {
               dataKey="value"
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
               ))}
             </Pie>
             <Tooltip

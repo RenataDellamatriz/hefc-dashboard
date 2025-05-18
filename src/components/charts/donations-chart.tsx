@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseCurrency } from "@/lib/utils";
+import { Donation } from "@/types/donation";
 import {
   BarChart,
   Bar,
@@ -10,17 +12,6 @@ import {
   XAxis,
 } from "recharts";
 
-const data = [
-  { name: "Medicamentos", valor: 1945.19 },
-  { name: "Alimentação", valor: 4290.0 },
-  { name: "Cesta básica", valor: 76300.8 },
-  { name: "Curativos", valor: 3075.75 },
-  { name: "Equipamentos", valor: 1640.0 },
-  { name: "Fraldas", valor: 23949.64 },
-  { name: "Higiene", valor: 876.87 },
-];
-
-// Cores por categoria
 const categoryColors: Record<string, string> = {
   Medicamentos: "#33658A",
   Alimentação: "#55DDE0",
@@ -31,9 +22,38 @@ const categoryColors: Record<string, string> = {
   Higiene: "#FF595E",
 };
 
-export function DonationsChart() {
+const donationTypeLabels: Record<string, string> = {
+  medicine: "Medicamentos",
+  supplies: "Suprimentos",
+  equipment: "Equipamentos",
+  money: "Dinheiro",
+  food: "Alimentos",
+  clothes: "Roupas",
+  other: "Outros",
+};
+
+export function DonationsChart({ donations }: { donations: Donation[] }) {
+  const translatedDonations = donations.map((donation) => ({
+    ...donation,
+    type: donationTypeLabels[donation.type?.toLowerCase()] || donation.type,
+  }));
+
+  const data = translatedDonations.reduce((acc, donation) => {
+    const category = donation.type || "Outros";
+    const value = parseCurrency(donation.amount);
+
+    const existing = acc.find((item) => item.name === category);
+    if (existing) {
+      existing.valor += value;
+    } else {
+      acc.push({ name: category, valor: value });
+    }
+
+    return acc;
+  }, [] as { name: string; valor: number }[]);
+
   return (
-    <Card className="col-span-12 md:col-span-5 w-full">
+    <Card className="col-span-12 sm:col-span-12 md:col-span-5 w-full">
       <CardHeader>
         <CardTitle>Doações por Categoria</CardTitle>
       </CardHeader>
@@ -47,9 +67,7 @@ export function DonationsChart() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" hide />
             <YAxis
-              tick={{
-                fontSize: 10,
-              }}
+              tick={{ fontSize: 10 }}
               tickFormatter={(value) =>
                 value.toLocaleString("pt-BR", {
                   style: "currency",
@@ -64,7 +82,10 @@ export function DonationsChart() {
             />
             <Bar dataKey="valor" barSize={40}>
               {data.map((entry) => (
-                <Cell key={entry.name} fill={categoryColors[entry.name]} />
+                <Cell
+                  key={entry.name}
+                  fill={categoryColors[entry.name] ?? "#888"} // cor fallback
+                />
               ))}
             </Bar>
           </BarChart>
@@ -75,7 +96,9 @@ export function DonationsChart() {
             <div key={entry.name} className="flex items-center space-x-2">
               <div
                 className="w-4 h-4 rounded-sm"
-                style={{ backgroundColor: categoryColors[entry.name] }}
+                style={{
+                  backgroundColor: categoryColors[entry.name] ?? "#888",
+                }}
               />
               <span className="text-sm">{entry.name}</span>
             </div>

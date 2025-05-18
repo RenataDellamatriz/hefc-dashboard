@@ -36,14 +36,14 @@ export function DashboardTable({
   return (
     <Card className="md:col-span-1">
       {title && (
-        <CardHeader className="flex justify-between">
+        <CardHeader className="flex flex-col md:flex-row justify-between">
           <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-          <div className="max-w-xs">
+          <div className="w-full md:max-w-xs">
             <Input
               placeholder="Pesquisar"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="max-w-sm"
+              className="w-full md:max-w-sm"
             />
           </div>
         </CardHeader>

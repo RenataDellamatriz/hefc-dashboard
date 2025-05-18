@@ -9,24 +9,15 @@ import {
   TooltipProps,
 } from "recharts";
 import React from "react";
-
-const data = [
-  { name: "Andador", valor: 270, quantidade: 9 },
-  { name: "Bengala", valor: 197, quantidade: 12 },
-  { name: "Cadeira de Banho", valor: 450, quantidade: 33 },
-  { name: "Cadeira de Rodas", valor: 670, quantidade: 28 },
-  { name: "Cama Hospitalar", valor: 920, quantidade: 15 },
-  { name: "Outros", valor: 1335, quantidade: 59 },
-];
+import { getLoansBarData } from "@/lib/utils";
+import { Loan } from "@/types/loan";
 
 const legendColors = {
-  valor: "#33658A",
   quantidade: "#F26419",
 };
 
 type DataItem = {
   name: string;
-  valor: number;
   quantidade: number;
 };
 
@@ -42,17 +33,20 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
     return (
       <div className="bg-white border border-gray-300 p-2 rounded shadow-lg">
         <p className="font-medium mb-1">{data.name}</p>
-        <p style={{ color: legendColors.valor }}>Valor: R$ {data.valor.toFixed(2)}</p>
-        <p style={{ color: legendColors.quantidade }}>Quantidade: {data.quantidade}</p>
+        <p style={{ color: legendColors.quantidade }}>
+          Quantidade: {data.quantidade}
+        </p>
       </div>
     );
   }
   return null;
 }
 
-export function LoansChart() {
+export function LoansChart({ loans }: { loans: Loan[] }) {
+  const data = getLoansBarData(loans);
+
   return (
-    <Card className="col-span-12 md:col-span-4 w-full">
+    <Card className="col-span-12 lg:col-span-4 w-full">
       <CardHeader>
         <CardTitle>Empréstimos por Tipo</CardTitle>
       </CardHeader>
@@ -65,25 +59,12 @@ export function LoansChart() {
           >
             <CartesianGrid strokeDasharray="3 3" />
             <YAxis
-              yAxisId="left"
               orientation="left"
-              stroke={legendColors.valor}
-              tickFormatter={(value) => `R$${value}`}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
               stroke={legendColors.quantidade}
+              allowDecimals={false}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar
-              yAxisId="left"
-              dataKey="valor"
-              name="Valor (R$)"
-              fill={legendColors.valor}
-            />
-            <Bar
-              yAxisId="right"
               dataKey="quantidade"
               name="Quantidade"
               fill={legendColors.quantidade}
@@ -92,13 +73,6 @@ export function LoansChart() {
         </ResponsiveContainer>
 
         <div className="mt-6 flex flex-wrap gap-6 justify-center">
-          <div className="flex items-center space-x-2">
-            <div
-              className="w-4 h-4 rounded-sm"
-              style={{ backgroundColor: legendColors.valor }}
-            />
-            <span className="text-sm font-medium">Valor (R$)</span>
-          </div>
           <div className="flex items-center space-x-2">
             <div
               className="w-4 h-4 rounded-sm"

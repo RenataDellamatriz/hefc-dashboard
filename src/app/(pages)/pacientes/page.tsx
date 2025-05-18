@@ -9,44 +9,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users } from "lucide-react";
 import { InfoCard } from "@/components/common/info-card";
 import { DashboardTable } from "@/components/common/dashboard-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { addPatient, getPatient } from "@/api/patient";
+import { Patient } from "@/types/patient";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  RegisterPatientFormSchema,
+  RegisterPatientFormValues,
+} from "@/schemas/patients";
+import { toast } from "sonner";
 
-const patientsList = [
-  {
-    id: 1,
-    name: "João Silva",
-    type: "Pessoa com Câncer",
-    status: "Em Tratamento",
-  },
-  {
-    id: 2,
-    name: "Maria Oliveira",
-    type: "Familiar",
-    status: "Em Tratamento",
-  },
-  {
-    id: 3,
-    name: "Carlos Souza",
-    type: "Outro Diagnóstico",
-    status: "Finalizado",
-  },
-  {
-    id: 4,
-    name: "Ana Costa",
-    type: "Pessoa com Câncer",
-    status: "Em Tratamento",
-  },
-  {
-    id: 5,
-    name: "Ricardo Almeida",
-    type: "Familiar",
-    status: "Finalizado",
-  },
-];
+const typeLabels: Record<string, string> = {
+  cancer: "Pessoa com Câncer",
+  family: "Familiar",
+  other: "Outro Diagnóstico",
+};
+
+const statusLabels: Record<string, string> = {
+  ongoing: "Em Tratamento",
+  completed: "Finalizado",
+};
 
 const patientsHeader = [
   { label: "Nome", key: "name" },
@@ -55,34 +50,87 @@ const patientsHeader = [
   { label: "Mais detalhes", key: "details" },
 ];
 
+const defaultValues: RegisterPatientFormValues = {
+  name: "",
+  type: "cancer",
+  status: "ongoing",
+};
+
 const Patients = () => {
   const [filter, setFilter] = useState("");
+  const [patientsList, setPatientsList] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredPatients = patientsList.filter(
+  const form = useForm<RegisterPatientFormValues>({
+    resolver: zodResolver(RegisterPatientFormSchema),
+    defaultValues,
+  });
+
+  const translatedPatientList = patientsList.map((patient) => ({
+    ...patient,
+    type: typeLabels[patient.type] || patient.type,
+    status: statusLabels[patient.status] || patient.status,
+  }));
+
+  const filteredPatients = translatedPatientList.filter(
     (patient) =>
       patient.name.toLowerCase().includes(filter.toLowerCase()) ||
       patient.type.toLowerCase().includes(filter.toLowerCase()) ||
       patient.status.toLowerCase().includes(filter.toLowerCase())
   );
+
+  async function getPatientsList() {
+    try {
+      setIsLoading(true);
+      const patients = await getPatient();
+      if (patients) {
+        setPatientsList(patients);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    getPatientsList();
+  }, []);
+
+  async function handleFormSubmit(data: RegisterPatientFormValues) {
+    try {
+      setIsLoading(true);
+      const response = await addPatient(data);
+      if (response) {
+        toast.success("Paciente cadastrado com sucesso!");
+        form.reset();
+        getPatientsList();
+      }
+    } catch (error) {
+      toast.error(`Erro ao cadastrar paciente, ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <InfoCard
           title="Total de Pacientes"
-          value="1.256"
+          value={new Map(patientsList.map((p) => [p.id, p])).size}
           description="Cadastrados"
           icon={<Users size={24} />}
         />
         <InfoCard
           title="Pacientes Ativos"
-          value="890"
+          value={patientsList.filter((p) => p.status === "ongoing").length}
           description="Em tratamento"
           icon={<Users size={24} />}
         />
         <InfoCard
-          title="Novos Pacientes"
-          value="45"
-          description="Este mês"
+          title="Atendimentos finalizados"
+          value={patientsList.filter((p) => p.status === "completed").length}
+          description="Pessoas atendidas"
           icon={<Users size={24} />}
         />
       </div>
@@ -94,9 +142,9 @@ const Patients = () => {
         </TabsList>
         <TabsContent value="lista">
           <DashboardTable
-            isLoading={false}
+            isLoading={isLoading}
             list={filteredPatients}
-            table={{ data: patientsList, header: patientsHeader }}
+            table={{ data: filteredPatients, header: patientsHeader }}
             message={"Nenhum paciente cadastrado."}
             searchFilter={filter}
             setSearchFilter={setFilter}
@@ -109,21 +157,93 @@ const Patients = () => {
               <CardTitle>Novo Paciente</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="grid gap-4">
-                <Input placeholder="name completo" disabled />
-                <Input placeholder="Data de nascimento" type="date" disabled />
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="type de Paciente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cancer">Pessoa com Câncer</SelectItem>
-                    <SelectItem value="familiar">Familiar</SelectItem>
-                    <SelectItem value="outro">Outro Diagnóstico</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button disabled>Cadastrar Paciente</Button>
-              </form>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit((data) => {
+                    handleFormSubmit(data);
+                  })}
+                  className="grid gap-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Paciente</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Tipo de Paciente" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="cancer">
+                                Pessoa com Câncer
+                              </SelectItem>
+                              <SelectItem value="family">Familiar</SelectItem>
+                              <SelectItem value="other">
+                                Outro Diagnóstico
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status do Paciente</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Status do Paciente" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="ongoing">
+                                Em Tratamento
+                              </SelectItem>
+                              <SelectItem value="completed">
+                                Finalizado
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Button type="submit" variant="default" isLoading={isLoading}>
+                    Cadastrar Paciente
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
