@@ -190,7 +190,7 @@ const Patients = () => {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Tipo de Paciente" />
                               </SelectTrigger>
                             </FormControl>
@@ -220,7 +220,7 @@ const Patients = () => {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Status do Paciente" />
                               </SelectTrigger>
                             </FormControl>
