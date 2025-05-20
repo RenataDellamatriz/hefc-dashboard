@@ -213,7 +213,7 @@ const Appointments = () => {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="cancer">
-                                Pessoa com Câncer
+                                Paciente oncológico
                               </SelectItem>
                               <SelectItem value="family">Familiar</SelectItem>
                               <SelectItem value="other">
