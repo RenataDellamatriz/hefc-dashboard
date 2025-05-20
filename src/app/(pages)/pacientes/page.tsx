@@ -33,7 +33,7 @@ import {
 import { toast } from "sonner";
 
 const typeLabels: Record<string, string> = {
-  cancer: "Paciente oncológico",
+  cancer: "Oncologia",
   family: "Familiar",
   other: "Outro Diagnóstico",
 };

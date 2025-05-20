@@ -6,7 +6,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 const COLORS = ["#F26419", "#F6AE2D", "#33658A"];
 
 export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
-  cancer: "Pessoas com câncer",
+  cancer: "Oncologia",
   family: "Familiares",
   other: "Outros diagnósticos",
 };
