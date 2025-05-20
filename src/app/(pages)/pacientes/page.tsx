@@ -196,7 +196,7 @@ const Patients = () => {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="cancer">
-                                Pessoa com Câncer
+                                Oncologia
                               </SelectItem>
                               <SelectItem value="family">Familiar</SelectItem>
                               <SelectItem value="other">

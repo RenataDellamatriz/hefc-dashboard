@@ -67,7 +67,7 @@ export function parseCurrency(
 //appointment utils
 
 export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
-  cancer: "Pessoas com câncer",
+  cancer: "Oncologia",
   family: "Familiares",
   other: "Outros diagnósticos",
 };
