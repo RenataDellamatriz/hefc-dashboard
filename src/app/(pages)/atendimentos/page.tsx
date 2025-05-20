@@ -49,14 +49,14 @@ const defaultValues: RegisterAppointmentFormValues = {
 };
 
 const appointmentTypeLabels: Record<string, string> = {
-  cancer: "Cancer",
-  family: "Familia",
+  cancer: "Oncologia",
+  family: "Familiar",
   other: "Outro",
 };
 
 const appointmentStatusLabels: Record<string, string> = {
   ongoing: "Em andamento",
-  completed: "Concluido",
+  completed: "Concluído",
 };
 
 const Appointments = () => {

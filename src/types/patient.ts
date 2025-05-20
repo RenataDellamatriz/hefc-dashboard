@@ -6,7 +6,7 @@ export type Patient = {
 };
 
 export enum PatientType {
-  cancer = "Cancêr",
+  cancer = "Oncologia",
   family = "Familiar",
   other = "Outro diagnóstico",
 }

@@ -54,11 +54,11 @@ const workshopsHeader = [
     key: "weekday",
   },
   {
-    label: "Horario de início",
+    label: "Horário de início",
     key: "startTime",
   },
   {
-    label: "Horario de encerramento",
+    label: "Horário de encerramento",
     key: "endTime",
   },
   { label: "Participants", key: "participants" },
@@ -66,7 +66,7 @@ const workshopsHeader = [
     label: "Status",
     key: "status",
   },
-  { label: "Details", key: "details" },
+  { label: "Detalhes", key: "details" },
 ];
 
 const defaultValues: RegisterWorkshopFormValues = {
