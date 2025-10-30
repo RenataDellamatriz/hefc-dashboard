@@ -6,6 +6,7 @@ import {
   CalendarClock,
   SquareLibrary,
   LogOut,
+  UserPlus,
 } from "lucide-react";
 import {
   Sidebar,
@@ -55,8 +56,16 @@ export const menuItems = [
   },
 ];
 
+export const adminMenuItems = [
+  {
+    title: "Cadastrar Usuários",
+    icon: UserPlus,
+    url: "/usuarios",
+  },
+];
+
 export function AppSidebar() {
-  const { logout } = useAuthContext();
+  const { logout, isAdmin } = useAuthContext();
   return (
     <Sidebar className="p-4 bg-sidebar">
       <SidebarHeader>
@@ -85,6 +94,26 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup className="flex justify-center gap-4">
+            <SidebarGroupLabel>ADMINISTRAÇÃO</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="flex justify-center gap-4">
+                {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="flex justify-center gap-4">
         <SidebarMenu className="flex justify-center gap-4">
