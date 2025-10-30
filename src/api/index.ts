@@ -6,7 +6,7 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
   const token = localStorage.getItem("bearerToken");
 
   const instance = axios.create({
-    baseURL: "http://localhost:8080",
+    baseURL: "https://vast-shannon-renatadellamatriz-f061fc36.koyeb.app",
     headers: {
       Authorization: `Bearer ${token}`,
     },
