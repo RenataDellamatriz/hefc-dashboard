@@ -20,7 +20,7 @@ const UsuariosCadastradosPage = () => {
       setIsLoading(true);
       const data = await getAllUsers();
       setUsers(data);
-    } catch (error) {
+    } catch {
       toast("Erro ao carregar usuários cadastrados.");
     } finally {
       setIsLoading(false);
@@ -38,7 +38,7 @@ const UsuariosCadastradosPage = () => {
         await deleteUser(userId);
         toast("Usuário excluído com sucesso.");
         await fetchUsers();
-      } catch (error) {
+      } catch {
         toast("Erro ao excluir usuário.");
       } finally {
         setDeletingId(null);

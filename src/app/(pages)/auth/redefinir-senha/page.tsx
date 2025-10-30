@@ -55,7 +55,7 @@ const RedefinirSenhaPage = () => {
         await resetPassword(password, token);
         toast("Senha redefinida com sucesso. Faça login novamente.");
         router.push("/auth");
-      } catch (e) {
+      } catch {
         toast("Não foi possível redefinir sua senha.");
       } finally {
         setIsLoading(false);

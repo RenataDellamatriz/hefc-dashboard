@@ -33,7 +33,7 @@ const ForgotPasswordPage = () => {
         setIsLoading(true);
         await forgotPassword(email);
         toast("Se o email existir, enviaremos instruções de recuperação.");
-      } catch (e) {
+      } catch {
         toast("Não foi possível solicitar a recuperação de senha.");
       } finally {
         setIsLoading(false);

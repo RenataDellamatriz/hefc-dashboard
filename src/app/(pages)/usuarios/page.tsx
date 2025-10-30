@@ -3,7 +3,13 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { UserPlus } from "lucide-react";
 import {
   Form,
@@ -26,12 +32,12 @@ const CadastroUsuarios = () => {
 
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { 
-      name: "", 
-      email: "", 
-      password: "", 
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
       confirmPassword: "",
-      role: ""
+      role: "",
     },
   });
 
@@ -39,9 +45,9 @@ const CadastroUsuarios = () => {
     async (data: CreateUserFormValues) => {
       try {
         setIsLoading(true);
-        
-        const { confirmPassword, ...userData } = data;
-        await createUser(userData);
+
+        const { name, email, password, role } = data;
+        await createUser({ name, email, password, role });
 
         toast("Usuário cadastrado com sucesso!");
         form.reset();
@@ -66,7 +72,10 @@ const CadastroUsuarios = () => {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(handleCreateUser)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="name"
@@ -74,7 +83,10 @@ const CadastroUsuarios = () => {
                     <FormItem>
                       <FormLabel>Nome de usuário</FormLabel>
                       <FormControl>
-                        <Input placeholder="Digite o nome de usuário" {...field} />
+                        <Input
+                          placeholder="Digite o nome de usuário"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -88,10 +100,10 @@ const CadastroUsuarios = () => {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="Digite o email" 
-                          {...field} 
+                        <Input
+                          type="email"
+                          placeholder="Digite o email"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -105,14 +117,19 @@ const CadastroUsuarios = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cargo</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o cargo" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="collaborator">Colaborador</SelectItem>
+                          <SelectItem value="collaborator">
+                            Colaborador
+                          </SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
                         </SelectContent>
                       </Select>
@@ -128,10 +145,10 @@ const CadastroUsuarios = () => {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="Digite a senha" 
-                          {...field} 
+                        <Input
+                          type="password"
+                          placeholder="Digite a senha"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -146,10 +163,10 @@ const CadastroUsuarios = () => {
                     <FormItem>
                       <FormLabel>Confirmar senha</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="Confirme a senha" 
-                          {...field} 
+                        <Input
+                          type="password"
+                          placeholder="Confirme a senha"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />

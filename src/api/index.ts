@@ -1,4 +1,3 @@
-import { LoginFormValues } from "@/context/auth-context";
 import axios, { AxiosRequestConfig } from "axios";
 import { User } from "@/types/user";
 
@@ -31,7 +30,7 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
   return await instance<ResponseType>(config);
 }
 
-export async function signIn(data: any) {
+export async function signIn(data: { email: string; password: string }) {
   const { data: token } = await apiRequest<string>({
     method: "POST",
     url: "/user/signin",
