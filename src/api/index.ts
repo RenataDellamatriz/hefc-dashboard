@@ -69,20 +69,39 @@ export async function signOut() {
   return true;
 }
 
-// ADMIN: listar todos os usuários
 export async function getAllUsers(): Promise<User[]> {
   const response = await apiRequest<User[]>({
     method: "GET",
-    url: "/users",
+    url: "/user/all",
   });
-
   return response.data;
 }
 
-// ADMIN: remover usuário colaborador por id (nunca admins)
 export async function deleteUser(userId: string): Promise<void> {
   await apiRequest<void>({
     method: "DELETE",
     url: `/user/${userId}`,
   });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await apiRequest<void>({
+    method: "POST",
+    url: "/user/forgot-password",
+    data: { email },
+  });
+}
+
+export async function resetPassword(newPassword: string, token: string) {
+  const { data: response } = await apiRequest({
+    method: "POST",
+    url: "user/reset-password",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    data: {
+      newPassword,
+    },
+  });
+  return response;
 }

@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@/schemas/schema";
 import { LoaderSpinner } from "@/components/common/loader-spinner";
+import Link from "next/link";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -99,7 +100,9 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-
+              <div className="text-right text-sm -mt-4">
+                <Link href="/auth/forgot-password" className="underline">Esqueceu a senha?</Link>
+              </div>
               <Button
                 className="bg-blue-800 hover:bg-blue-800/90"
                 disabled={isLoading}

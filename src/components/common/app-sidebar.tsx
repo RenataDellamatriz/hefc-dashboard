@@ -62,6 +62,11 @@ export const adminMenuItems = [
     icon: UserPlus,
     url: "/usuarios",
   },
+  {
+    title: "Equipe",
+    icon: Users,
+    url: "/usuarios/cadastrados",
+  },
 ];
 
 export function AppSidebar() {
