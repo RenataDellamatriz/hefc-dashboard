@@ -5,7 +5,7 @@ import { Appointment } from "@/types/appointment";
 export async function getAppointment(appointmentId?: string) {
   const { data } = await apiRequest<Appointment[]>({
     method: "GET",
-    url: `/appointment${appointmentId ? `/${appointmentId}` : ""}`,
+    url: `/appointment${appointmentId ? `?appointmentId=${appointmentId}` : ""}`,
   });
   return data;
 }

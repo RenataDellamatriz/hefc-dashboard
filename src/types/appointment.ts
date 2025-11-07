@@ -1,10 +1,15 @@
 export interface Appointment {
   id: number;
-  appointmentDate: string;
+  pacienteId: number;
   patientName: string;
-  type: AppointmentType;
-  status: AppointmentStatus;
-  createdAt: string;
+  profissional: string;
+  especialidade: string;
+  data: string; // ISO date
+  observacoes?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+  status: string;
+  type: string;
 }
 
 export type AppointmentType = "cancer" | "family" | "other";

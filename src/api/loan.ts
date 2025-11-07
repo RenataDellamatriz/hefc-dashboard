@@ -5,7 +5,7 @@ import { Loan } from "@/types/loan";
 export async function getLoan(loanId?: string) {
   const { data } = await apiRequest<Loan[]>({
     method: "GET",
-    url: `/loan${loanId ? `/${loanId}` : ""}`,
+    url: `/loan${loanId ? `?loanId=${loanId}` : ""}`,
   });
   return data;
 }

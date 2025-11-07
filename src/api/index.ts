@@ -5,7 +5,8 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
   const token = localStorage.getItem("bearerToken");
 
   const instance = axios.create({
-    baseURL: "https://vast-shannon-renatadellamatriz-f061fc36.koyeb.app",
+    // baseURL: "https://vast-shannon-renatadellamatriz-f061fc36.koyeb.app",
+    baseURL: "http://localhost:8080",
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -31,13 +32,13 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
 }
 
 export async function signIn(data: { email: string; password: string }) {
-  const { data: token } = await apiRequest<string>({
+  const { data: response } = await apiRequest<{ accessToken: string }>({
     method: "POST",
     url: "/user/signin",
     data,
   });
 
-  return token;
+  return response.accessToken;
 }
 
 export async function getUserData() {
@@ -94,7 +95,7 @@ export async function forgotPassword(email: string): Promise<void> {
 export async function resetPassword(newPassword: string, token: string) {
   const { data: response } = await apiRequest({
     method: "POST",
-    url: "user/reset-password",
+    url: "/user/reset-password",
     headers: {
       Authorization: `Bearer ${token}`,
     },

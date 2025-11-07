@@ -32,6 +32,8 @@ import {
   RegisterWorkshopFormValues,
 } from "@/schemas/workshop";
 import { addWorkshop, getWorkshop } from "@/api/workshop";
+import { getPatient } from "@/api/patient";
+import { Patient } from "@/types/patient";
 
 const weekdayMap: Record<string, string> = {
   monday: "Segunda-feira",
@@ -81,6 +83,8 @@ const Workshops = () => {
   const [filter, setFilter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [workshopsList, setWorkshopsList] = useState<Workshop[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
 
   const form = useForm<RegisterWorkshopFormValues>({
     resolver: zodResolver(RegisterWorkshopFormSchema),
@@ -114,8 +118,20 @@ const Workshops = () => {
     }
   }
 
+  async function getPatientsList() {
+    try {
+      const patientsData = await getPatient();
+      if (patientsData) {
+        setPatients(patientsData);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     getList();
+    getPatientsList();
   }, []);
 
   async function handleFormSubmit(data: RegisterWorkshopFormValues) {
@@ -175,6 +191,32 @@ const Workshops = () => {
             setSearchFilter={setFilter}
             title="Oficinas"
           />
+          {selectedWorkshop && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Oficinas do Paciente - {selectedWorkshop.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {workshopsList
+                    .filter((w) => w.patientIds && w.patientIds.length > 0)
+                    .map((workshop) => (
+                      <div key={workshop.id} className="border-b pb-2">
+                        <p className="text-sm">
+                          <strong>{workshop.name}</strong> - {workshop.weekday} das{" "}
+                          {workshop.startTime} às {workshop.endTime}
+                        </p>
+                        {workshop.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {workshop.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         <TabsContent value="adicionar">
           <Card>

@@ -10,7 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import useClipboard from "@/hooks/use-clipboard";
-import { Copy } from "lucide-react";
+import { Copy, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DataTableProps {
   headers: {
@@ -25,9 +26,10 @@ interface DataTableProps {
   handleSelectedRow?: (rowIndex: number) => void;
   selectedRow?: any;
   setSelectedRow?: (value: any) => void;
+  onDetailsClick?: (row: Record<string, any>) => void;
 }
 
-export function DataTable({ data, headers, caption }: DataTableProps) {
+export function DataTable({ data, headers, caption, onDetailsClick }: DataTableProps) {
   const { copyToClipboard } = useClipboard();
 
   const truncate = (string: string, max: number = 18) =>
@@ -64,35 +66,49 @@ export function DataTable({ data, headers, caption }: DataTableProps) {
                 `}
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col">
-                    {row[header.key] !== undefined &&
-                    row[header.key] !== null ? (
-                      <div className="flex items-center gap-1">
-                        {row[header.key + "Icon"] && (
-                          <div className="mr-1">{row[header.key + "Icon"]}</div>
-                        )}
-                        <div className="flex flex-col gap-2">
-                          <div className="font-medium">
-                            {truncate(row[header.key])}
-                          </div>
-                          {row[header.key + "Subtext"] && (
-                            <div className="text-sm text-gray-500">
-                              {truncate(row[header.key + "Subtext"])}
+                  {header.key === "details" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDetailsClick?.(row)}
+                      className="h-8 px-2"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver detalhes
+                    </Button>
+                  ) : (
+                    <>
+                      <div className="flex flex-col">
+                        {row[header.key] !== undefined &&
+                        row[header.key] !== null ? (
+                          <div className="flex items-center gap-1">
+                            {row[header.key + "Icon"] && (
+                              <div className="mr-1">{row[header.key + "Icon"]}</div>
+                            )}
+                            <div className="flex flex-col gap-2">
+                              <div className="font-medium">
+                                {truncate(row[header.key])}
+                              </div>
+                              {row[header.key + "Subtext"] && (
+                                <div className="text-sm text-gray-500">
+                                  {truncate(row[header.key + "Subtext"])}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
-                  </div>
-                  {header.enableCopy && row[header.key] && (
-                    <Copy
-                      className="cursor-pointer"
-                      size={16}
-                      color="#71717A"
-                      onClick={() => copyToClipboard(row[header.key])}
-                    />
+                      {header.enableCopy && row[header.key] && (
+                        <Copy
+                          className="cursor-pointer"
+                          size={16}
+                          color="#71717A"
+                          onClick={() => copyToClipboard(row[header.key])}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               </TableCell>

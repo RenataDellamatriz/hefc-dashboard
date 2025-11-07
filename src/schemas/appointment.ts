@@ -1,10 +1,17 @@
 import { z } from "zod";
 
 export const RegisterAppointmentFormSchema = z.object({
-  appointmentDate: z.string({
+  pacienteId: z.number({
+    required_error: "ID do paciente é obrigatório",
+  }),
+  data: z.string({
     required_error: "Data é obrigatória",
   }),
-  patientName: z.string().min(1, "Nome do paciente é obrigatório"),
+  profissional: z.string().min(1, "Profissional é obrigatório"),
+  especialidade: z.string().min(1, "Especialidade é obrigatória"),
+  observacoes: z.string().optional(),
+  appointmentDate: z.string().optional(),
+  patientName: z.string().min(1).optional(),
   type: z.enum(["cancer", "family", "other"], {
     required_error: "Tipo de atendimento é obrigatório",
   }),

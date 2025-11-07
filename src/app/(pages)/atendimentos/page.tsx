@@ -32,18 +32,28 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { formatDate, formatDateAndTime } from "@/lib/utils";
+import { getPatient } from "@/api/patient";
+import { Patient } from "@/types/patient";
+import { PatientAutocomplete } from "@/components/common/patient-autocomplete";
+import { DetailsModal } from "@/components/common/details-modal";
 
 const appointmentsHeader = [
   { label: "Paciente", key: "patientName" },
+  { label: "Profissional", key: "professionalName" },
+  { label: "Especialidade", key: "specialty" },
   { label: "Data", key: "appointmentDate" },
-  { label: "tipo", key: "type" },
+  { label: "Tipo", key: "type" },
   { label: "Status", key: "status" },
   { label: "Mais detalhes", key: "details" },
 ];
 
 const defaultValues: RegisterAppointmentFormValues = {
-  appointmentDate: "",
+  data: "",
   patientName: "",
+  pacienteId: 0,
+  profissional: "",
+  especialidade: "",
+  observacoes: "",
   type: "cancer",
   status: "ongoing",
 };
@@ -63,6 +73,10 @@ const Appointments = () => {
   const [filter, setFilter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<number>(0);
+  const [selectedAppointmentDetails, setSelectedAppointmentDetails] = useState<Appointment | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const form = useForm<RegisterAppointmentFormValues>({
     resolver: zodResolver(RegisterAppointmentFormSchema),
@@ -71,19 +85,18 @@ const Appointments = () => {
 
   const translatedAppointments = appointmentsList.map((appointment) => ({
     ...appointment,
-    appointmentDate: formatDateAndTime(appointment.appointmentDate),
+    appointmentDate: formatDateAndTime(appointment.data),
     type:
-      appointmentTypeLabels[appointment.type.toLowerCase()] || appointment.type,
-    status:
-      appointmentStatusLabels[appointment.status.toLowerCase()] ||
-      appointment.status,
+      appointmentTypeLabels[appointment.especialidade.toLowerCase()] || appointment.especialidade,   
+    professionalName: appointment.profissional || "-",
+    specialty: appointment.especialidade || "-",
   }));
 
   const filteredAppointments = translatedAppointments.filter(
-    (appointment) =>
-      appointment.patientName.toLowerCase().includes(filter.toLowerCase()) ||
+    (appointment) =>      
       appointment.type.toLowerCase().includes(filter.toLowerCase()) ||
-      appointment.status.toLowerCase().includes(filter.toLowerCase())
+      appointment.status.toLowerCase().includes(filter.toLowerCase()) ||
+      (appointment.profissional || "").toLowerCase().includes(filter.toLowerCase())
   );
 
   async function getList() {
@@ -100,13 +113,37 @@ const Appointments = () => {
     }
   }
 
+  async function getPatientsList() {
+    try {
+      const patientsData = await getPatient();
+      if (patientsData) {
+        setPatients(patientsData);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     getList();
+    getPatientsList();
   }, []);
+
+  useEffect(() => {
+    if (selectedPatientId) {
+      const patient = patients.find((p) => p.id === selectedPatientId);
+      if (patient) {
+        form.setValue("patientName", patient.name);
+        form.setValue("pacienteId", patient.id);
+      }
+    }
+  }, [selectedPatientId, patients, form]);
 
   async function handleFormSubmit(data: RegisterAppointmentFormValues) {
     try {
       setIsLoading(true);
+      form.setValue("pacienteId", selectedPatientId);
+      console.log(data);
       const response = await addAppointment(data);
       if (response) {
         toast.success("Atendimento registrado com sucesso!");
@@ -124,9 +161,18 @@ const Appointments = () => {
   const todayString = today.toISOString().split("T")[0];
 
   const appointmentsToday = appointmentsList.filter((appointment) => {
-    const appointmentDate = appointment.appointmentDate?.split("T")[0];
+    const appointmentDate = appointment.data?.split("T")[0];
     return appointmentDate === todayString;
   });
+
+  const appointmentsByPatient = appointmentsList.reduce((acc, apt) => {
+    const key = apt.patientName.toString();
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(apt);
+    return acc;
+  }, {} as Record<string, Appointment[]>);
 
   return (
     <div className="flex flex-col gap-6">
@@ -165,11 +211,106 @@ const Appointments = () => {
             isLoading={false}
             list={filteredAppointments}
             table={{ data: filteredAppointments, header: appointmentsHeader }}
-            message={"Nenhum paciente cadastrado."}
+            message={"Nenhum atendimento cadastrado."}
             searchFilter={filter}
             setSearchFilter={setFilter}
             title="Últimos atendimentos"
+            onDetailsClick={(item) => {
+              const appointment = appointmentsList.find((a) => a.id === item.id);
+              if (appointment) {
+                setSelectedAppointmentDetails(appointment);
+                setIsDetailsModalOpen(true);
+              }
+            }}
           />
+          <DetailsModal
+            open={isDetailsModalOpen}
+            onOpenChange={setIsDetailsModalOpen}
+            title={`Detalhes do Atendimento`}
+          >
+            {selectedAppointmentDetails && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Paciente</label>
+                    <p className="text-sm text-gray-900">{selectedAppointmentDetails.patientName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Data e Hora</label>
+                    <p className="text-sm text-gray-900">
+                      {formatDateAndTime(selectedAppointmentDetails.data)}
+                    </p>
+                  </div>
+                  {selectedAppointmentDetails.profissional && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">Profissional</label>
+                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.profissional}</p>
+                    </div>
+                  )}
+                  {selectedAppointmentDetails.especialidade && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">Especialidade</label>
+                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.especialidade}</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Tipo</label>
+                    <p className="text-sm text-gray-900">
+                      {appointmentTypeLabels[selectedAppointmentDetails.type?.toLowerCase()] || selectedAppointmentDetails.type}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Status</label>
+                    <p className="text-sm text-gray-900">
+                      {appointmentStatusLabels[selectedAppointmentDetails.status?.toLowerCase()] || selectedAppointmentDetails.status}
+                    </p>
+                  </div>
+                  {selectedAppointmentDetails.observacoes && (
+                    <div className="col-span-2">
+                      <label className="text-sm font-semibold text-gray-700">Observações</label>
+                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.observacoes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </DetailsModal>
+          <div className="mt-6 space-y-4">
+            <h3 className="text-lg font-semibold">Atendimentos por Paciente</h3>
+            {Object.entries(appointmentsByPatient).map(([patientName, apts]) => (
+              <Card key={patientName}>
+                <CardHeader>
+                  <CardTitle>{patientName}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {apts.map((apt) => (
+                      <div key={apt.id} className="border-b pb-2">
+                        <p className="text-sm">
+                          <strong>Data:</strong> {formatDateAndTime(apt.data)}
+                        </p>
+                        {apt.profissional && (
+                          <p className="text-sm">
+                            <strong>Profissional:</strong> {apt.profissional}
+                          </p>
+                        )}
+                        {apt.especialidade && (
+                          <p className="text-sm">
+                            <strong>Especialidade:</strong> {apt.especialidade}
+                          </p>
+                        )}
+                        {apt.observacoes && (
+                          <p className="text-sm">
+                            <strong>Observações:</strong> {apt.observacoes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
         <TabsContent value="adicionar">
           <Card>
@@ -187,14 +328,53 @@ const Appointments = () => {
                     name="patientName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nome do Paciente</FormLabel>
+                        <FormLabel>Paciente</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nome do Paciente" {...field} />
+                          <PatientAutocomplete
+                            patients={patients}
+                            value={field.value}
+                            onChange={(patientName, patientId) => {
+                              field.onChange(patientName);
+                              if (patientId) {
+                                setSelectedPatientId(patientId);
+                                form.setValue("pacienteId", patientId);
+                              }
+                            }}
+                            placeholder="Buscar paciente..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="profissional"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome do Profissional</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome do profissional" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="especialidade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Especialidade</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Especialidade" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
@@ -212,13 +392,9 @@ const Appointments = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="cancer">
-                                Oncologia
-                              </SelectItem>
+                              <SelectItem value="cancer">Oncologia</SelectItem>
                               <SelectItem value="family">Familiar</SelectItem>
-                              <SelectItem value="other">
-                                Outro Diagnóstico
-                              </SelectItem>
+                              <SelectItem value="other">Outro Diagnóstico</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -242,12 +418,8 @@ const Appointments = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="ongoing">
-                                Em andamento
-                              </SelectItem>
-                              <SelectItem value="completed">
-                                Concluído
-                              </SelectItem>
+                              <SelectItem value="ongoing">Em andamento</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -257,10 +429,10 @@ const Appointments = () => {
 
                     <FormField
                       control={form.control}
-                      name="appointmentDate"
+                      name="data"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Data</FormLabel>
+                          <FormLabel>Data e Hora</FormLabel>
                           <FormControl>
                             <Input type="datetime-local" {...field} />
                           </FormControl>
@@ -269,6 +441,22 @@ const Appointments = () => {
                       )}
                     />
                   </div>
+                  <FormField
+                    control={form.control}
+                    name="observacoes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Observações</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Observações sobre o atendimento"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <Button
                     type="submit"
                     disabled={isLoading}

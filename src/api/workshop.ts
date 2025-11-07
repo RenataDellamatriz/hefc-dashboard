@@ -5,7 +5,7 @@ import { RegisterWorkshopFormValues } from "@/schemas/workshop";
 export async function getWorkshop(workshopId?: string) {
   const { data } = await apiRequest<Workshop[]>({
     method: "GET",
-    url: `/workshop${workshopId ? `/${workshopId}` : ""}`,
+    url: `/workshop${workshopId ? `?workshopId=${workshopId}` : ""}`,
   });
 
   return data;

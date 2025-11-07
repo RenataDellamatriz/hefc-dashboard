@@ -5,7 +5,7 @@ import { Donation } from "@/types/donation";
 export async function getDonation(donationId?: string) {
   const { data } = await apiRequest<Donation[]>({
     method: "GET",
-    url: `/donation${donationId ? `/${donationId}` : ""}`,
+    url: `/donation${donationId ? `?donationId=${donationId}` : ""}`,
   });
 
   return data;

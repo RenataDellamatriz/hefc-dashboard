@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/common/data-table";
 import { LoaderSpinner } from "./loader-spinner";
@@ -12,11 +11,33 @@ interface TableWrapperProps {
   message: string;
   searchFilter: string;
   setSearchFilter: React.Dispatch<React.SetStateAction<string>>;
+  onDetailsClick?: (item: any) => void;
 }
 
 interface Table {
   data: any[];
   header: any;
+}
+
+// Função utilitária para transformar objetos em strings
+function sanitizeRow(row: any) {
+  const sanitizedRow: any = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value)
+    ) {
+      sanitizedRow[key] = JSON.stringify(value); // Ou selecione o campo principal, ex: value.name
+    } else if (Array.isArray(value)) {
+      sanitizedRow[key] = value.map((v) =>
+        typeof v === "object" ? JSON.stringify(v) : String(v)
+      ).join(", ");
+    } else {
+      sanitizedRow[key] = value;
+    }
+  }
+  return sanitizedRow;
 }
 
 export function DashboardTable({
@@ -27,12 +48,17 @@ export function DashboardTable({
   message,
   searchFilter,
   setSearchFilter,
+  onDetailsClick,
 }: TableWrapperProps) {
-  const filteredList = list.filter((item) => {
-    return Object.values(item).some((val) =>
-      String(val).toLowerCase().includes(searchFilter.toLowerCase())
+  // Filtro + sanitização
+  const filteredList = list
+    .map(sanitizeRow)
+    .filter((item) =>
+      Object.values(item).some((val) =>
+        String(val).toLowerCase().includes(searchFilter.toLowerCase())
+      )
     );
-  });
+
   return (
     <Card className="md:col-span-1">
       {title && (
@@ -53,8 +79,13 @@ export function DashboardTable({
           <div className="w-full h-[180px] flex justify-center items-center">
             <LoaderSpinner />
           </div>
-        ) : list.length > 0 ? (
-          <DataTable data={filteredList} headers={table.header} caption="" />
+        ) : filteredList.length > 0 ? (
+          <DataTable
+            data={filteredList}
+            headers={table.header}
+            caption=""
+            onDetailsClick={onDetailsClick}
+          />
         ) : (
           <div className="w-full h-[180px] flex justify-center items-center">
             <p className="text-gray-500-700 mt-6">{message}</p>
