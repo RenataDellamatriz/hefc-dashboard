@@ -143,7 +143,7 @@ const Loans = () => {
   async function handleFormSubmit(data: RegisterLoanFormValues) {
     try {
       setIsLoading(true);
-      console.log(data)
+
       const response = await addLoan(data);
       if (response) {
         toast.success("Empréstimo registrado com sucesso!");

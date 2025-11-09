@@ -12,7 +12,6 @@ export async function getPatient(patientId?: string) {
 }
 
 export async function addPatient(patient: RegisterPatientFormValues) {
-  console.log("patient", patient);
   const { data } = await apiRequest({
     method: "POST",
     url: "/patient",

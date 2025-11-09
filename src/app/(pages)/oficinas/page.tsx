@@ -152,9 +152,6 @@ const Workshops = () => {
     });
   };
 
-  console.log("form errors", form.formState.errors);
-  console.log("selectedPatientIds", selectedPatientIds);
-
   async function handleFormSubmit(data: RegisterWorkshopFormValues) {
     try {
       setIsLoading(true);

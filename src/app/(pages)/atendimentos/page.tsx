@@ -147,7 +147,7 @@ const Appointments = () => {
     try {
       setIsLoading(true);
       form.setValue("patientId", selectedPatientId);
-      console.log(data);
+
       const response = await addAppointment(data);
       if (response) {
         toast.success("Atendimento registrado com sucesso!");

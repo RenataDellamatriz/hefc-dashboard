@@ -57,15 +57,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isAuthenticated = !!token;
   const isAdmin = user?.role == "admin";
 
-  console.log("isAdmin", isAdmin);
-  console.log("user", user);
-
   useEffect(() => {
     const fetchUserData = async () => {
       if (token && !user) {
         try {
           const userData = await getUserData();
-          console.log("userData", userData);
+
           setUser(userData);
         } catch (error) {
           console.error("Erro ao buscar dados do usuário:", error);
@@ -81,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (data: LoginFormValues) => {
     const response = await signIn(data);
-console.log("response", response)
+
     if (!response) {
       throw new Error("Login failed");
     }
