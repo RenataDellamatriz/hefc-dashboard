@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (data: LoginFormValues) => {
     const response = await signIn(data);
-
+console.log("response", response)
     if (!response) {
       throw new Error("Login failed");
     }

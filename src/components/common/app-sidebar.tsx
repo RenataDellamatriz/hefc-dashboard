@@ -70,7 +70,8 @@ export const adminMenuItems = [
 ];
 
 export function AppSidebar() {
-  const { logout, isAdmin } = useAuthContext();
+  const { logout, isAdmin, user } = useAuthContext();
+
   return (
     <Sidebar className="p-4 bg-sidebar">
       <SidebarHeader>
@@ -122,6 +123,16 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="flex justify-center gap-4">
         <SidebarMenu className="flex justify-center gap-4">
+          {user && (
+            <div className="px-4 py-3 mb-4 bg-sidebar-foreground/10 rounded-lg">
+              <div className="text-sm font-medium text-sidebar-foreground">
+                {user.name || "Usuário"}
+              </div>
+              <div className="text-xs text-sidebar-foreground/70">
+                {user.email}
+              </div>
+            </div>
+          )}
           <SidebarMenuItem key={"Sair"}>
             <SidebarMenuButton asChild>
               <a href={"/auth"} onClick={logout}>

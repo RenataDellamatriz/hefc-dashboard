@@ -1,19 +1,18 @@
+import { Patient } from "./patient";
+
 export type Workshop = {
   id: number;
-  nome: string;
-  descricao?: string;
-  diaSemana: string; // ex: "Segunda-feira"
-  horarioInicio: string; // ex: "09:00"
-  horarioFim: string; // ex: "10:30"
-  participantes?: OficinaParticipante[];
-  criadoEm?: string;
-  atualizadoEm?: string;
+  patientId: number;
+  patientName?: string;
+  name: string;
+  description?: string;
+  weekday: string; // ex: "monday"
+  startTime: string; // ex: "09:00"
+  endTime: string; // ex: "10:30"
+  participants?: Patient[];
+  createdAt?: string;
+  updatedAt?: string;
+  participantsCount?: number;
+  status: string;
 };
 
-export interface OficinaParticipante {
-  id: number;
-  oficinaId: number;
-  pacienteId: number;
-  paciente?: any;
-  criadoEm?: string;
-}

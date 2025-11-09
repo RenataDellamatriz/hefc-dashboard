@@ -1,11 +1,11 @@
 export type Donation = {
   id: number;
-  pacienteId: number;
-  descricaoItem: string;
-  quantidade: number;
-  unidade: string;
-  valorEstimado?: number;  
-  atualizadoEm?: string;
+  patientId: number;
+  itemDescription: string;
+  quantity: number;
+  unit: string;
+  estimatedValue?: number;
+  updatedAt?: string;
   createdAt?: string;
   amount?: string;
   type: string;

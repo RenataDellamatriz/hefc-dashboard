@@ -32,7 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { addDonation, getDonation } from "@/api/donation";
-import { cn, formatToBRL } from "@/lib/utils";
+import { cn, formatDecimalForAPI, formatToBRL } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { getPatient } from "@/api/patient";
 import { Patient } from "@/types/patient";
@@ -43,20 +43,19 @@ const defaultValues: RegisterDonationFormValues = {
   type: "medicine",
   amount: "",
   patientName: "",
-  pacienteId: 0,
-  descricaoItem: "",
-  quantidade: 0,
-  unidade: "",
-  valorEstimado: "",
+  patientId: 0,
+  itemDescription: "",
+  quantity: 0,
+  unit: "",
+  estimatedValue: "",
   status: "pending",
 };
 
 const donationsHeader = [
   { label: "Data", key: "date" },
   { label: "Paciente", key: "patientName" },
-  { label: "Descrição", key: "description" },
+  { label: "Tipo", key: "type" },
   { label: "Quantidade", key: "quantity" },
-  { label: "Valor", key: "value" },
   { label: "Status", key: "status" },
   { label: "Mais detalhes", key: "details" },
 ];
@@ -92,14 +91,13 @@ const Donations = () => {
   });
 
   const translatedDonations = donationsList.map((donation) => {
-    // Buscar nome do paciente se tiver pacienteId
-    const patient = donation.pacienteId
-      ? patients.find((p) => p.id === donation.pacienteId)
+    const patient = donation.patientId
+      ? patients.find((p) => p.id === donation.patientId)
       : null;
 
     return {
       ...donation,
-      value: donation.amount
+      amount: donation.amount
         ? formatToBRL(parseFloat(donation.amount.replace(",", ".")))
         : "R$ 0,00",
       date: donation.createdAt
@@ -109,8 +107,8 @@ const Donations = () => {
       status:
         donationStatusLabels[donation.status?.toLowerCase()] || donation.status,
       patientName: donation.patientName || patient?.name || "-",
-      description: donation.descricaoItem || "-",
-      quantity: donation.quantidade ?? "-",
+      description: donation.itemDescription || "-",
+      quantity: donation.quantity ?? "-",
     };
   });
 
@@ -156,7 +154,7 @@ const Donations = () => {
       const patient = patients.find((p) => p.id === selectedPatientId);
       if (patient) {
         form.setValue("patientName", patient.name);
-        form.setValue("pacienteId", patient.id);
+        form.setValue("patientId", patient.id);
       }
     }
   }, [selectedPatientId, patients, form]);
@@ -164,8 +162,16 @@ const Donations = () => {
   async function handleFormSubmit(data: RegisterDonationFormValues) {
     try {
       setIsLoading(true);
-      form.setValue("pacienteId", selectedPatientId);
-      const response = await addDonation(data);
+      const submitData = {
+        ...data,
+        patientId: selectedPatientId,
+        estimatedValue: data.estimatedValue
+          ? formatDecimalForAPI(data.estimatedValue)
+          : undefined,
+        amount: data.amount ? formatDecimalForAPI(data.amount) : undefined,
+      };
+
+      const response = await addDonation(submitData);
       if (response) {
         toast.success("Doação registrada com sucesso!");
         form.reset();
@@ -178,19 +184,6 @@ const Donations = () => {
     }
   }
 
-  const donationsByPatient = donationsList.reduce((acc, donation) => {
-    // Buscar nome do paciente pelo pacienteId
-    const patient = donation.pacienteId
-      ? patients.find((p) => p.id === donation.pacienteId)
-      : null;
-    const key = donation.patientName || patient?.name || "Sem paciente";
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(donation);
-    return acc;
-  }, {} as Record<string, Donation[]>);
-
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -200,8 +193,8 @@ const Donations = () => {
             donationsList.reduce(
               (acc, donation) =>
                 acc +
-                (donation.valorEstimado
-                  ? donation.valorEstimado
+                (donation.estimatedValue
+                  ? donation.estimatedValue
                   : donation.amount
                   ? parseFloat(donation.amount.replace(",", "."))
                   : 0),
@@ -251,9 +244,9 @@ const Donations = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   {(() => {
-                    const patient = selectedDonationDetails.pacienteId
+                    const patient = selectedDonationDetails.patientId
                       ? patients.find(
-                          (p) => p.id === selectedDonationDetails.pacienteId
+                          (p) => p.id === selectedDonationDetails.patientId
                         )
                       : null;
                     const patientName =
@@ -287,37 +280,37 @@ const Donations = () => {
                       ] || selectedDonationDetails.status}
                     </p>
                   </div>
-                  {(selectedDonationDetails.descricaoItem ||
-                    selectedDonationDetails.descricaoItem) && (
+                  {(selectedDonationDetails.itemDescription ||
+                    selectedDonationDetails.itemDescription) && (
                     <div className="col-span-2">
                       <label className="text-sm font-semibold text-gray-700">
                         Descrição
                       </label>
                       <p className="text-sm text-gray-900">
-                        {selectedDonationDetails.descricaoItem ||
-                          selectedDonationDetails.descricaoItem}
+                        {selectedDonationDetails.itemDescription ||
+                          selectedDonationDetails.itemDescription}
                       </p>
                     </div>
                   )}
-                  {selectedDonationDetails.quantidade && (
+                  {selectedDonationDetails.quantity && (
                     <div>
                       <label className="text-sm font-semibold text-gray-700">
                         Quantidade
                       </label>
                       <p className="text-sm text-gray-900">
-                        {selectedDonationDetails.quantidade}
+                        {selectedDonationDetails.quantity}
                       </p>
                     </div>
                   )}
-                  {(selectedDonationDetails.valorEstimado ||
+                  {(selectedDonationDetails.estimatedValue ||
                     selectedDonationDetails.amount) && (
                     <div>
                       <label className="text-sm font-semibold text-gray-700">
                         Valor
                       </label>
                       <p className="text-sm text-gray-900">
-                        {selectedDonationDetails.valorEstimado
-                          ? formatToBRL(selectedDonationDetails.valorEstimado)
+                        {selectedDonationDetails.estimatedValue
+                          ? formatToBRL(selectedDonationDetails.estimatedValue)
                           : selectedDonationDetails.amount
                           ? formatToBRL(
                               parseFloat(
@@ -343,71 +336,6 @@ const Donations = () => {
               </div>
             )}
           </DetailsModal>
-          <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-semibold">
-              Histórico de Doações por Paciente
-            </h3>
-            {Object.entries(donationsByPatient).map(
-              ([patientName, donations]) => (
-                <Card key={patientName}>
-                  <CardHeader>
-                    <CardTitle>{patientName}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {donations.map((donation) => {
-                        const patient = donation.pacienteId
-                          ? patients.find((p) => p.id === donation.pacienteId)
-                          : null;
-                        return (
-                          <div key={donation.id} className="border-b pb-2">
-                            <p className="text-sm">
-                              <strong>Data:</strong>{" "}
-                              {donation.createdAt &&
-                                new Date(donation.createdAt).toLocaleDateString(
-                                  "pt-BR"
-                                )}
-                            </p>
-                            {donation.descricaoItem && (
-                              <p className="text-sm">
-                                <strong>Descrição:</strong>{" "}
-                                {donation.descricaoItem}
-                              </p>
-                            )}
-                            {donation.quantidade && (
-                              <p className="text-sm">
-                                <strong>Quantidade:</strong>{" "}
-                                {donation.quantidade} {donation.unidade || ""}
-                              </p>
-                            )}
-                            {(donation.valorEstimado || donation.amount) && (
-                              <p className="text-sm">
-                                <strong>Valor:</strong>{" "}
-                                {donation.valorEstimado
-                                  ? formatToBRL(donation.valorEstimado)
-                                  : donation.amount
-                                  ? formatToBRL(
-                                      parseFloat(
-                                        donation.amount.replace(",", ".")
-                                      )
-                                    )
-                                  : "R$ 0,00"}
-                              </p>
-                            )}
-                            {patient && (
-                              <p className="text-sm">
-                                <strong>Paciente:</strong> {patient.name}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            )}
-          </div>
         </TabsContent>
         <TabsContent value="adicionar">
           <Card>
@@ -434,7 +362,7 @@ const Donations = () => {
                               field.onChange(patientName);
                               if (patientId) {
                                 setSelectedPatientId(patientId);
-                                form.setValue("pacienteId", patientId);
+                                form.setValue("patientId", patientId);
                               }
                             }}
                             placeholder="Buscar paciente (opcional)..."
@@ -507,7 +435,7 @@ const Donations = () => {
                   </div>
                   <FormField
                     control={form.control}
-                    name="descricaoItem"
+                    name="itemDescription"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Descrição do Item</FormLabel>
@@ -524,7 +452,7 @@ const Donations = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
-                      name="quantidade"
+                      name="quantity"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Quantidade</FormLabel>
@@ -544,7 +472,7 @@ const Donations = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="unidade"
+                      name="unit"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Unidade</FormLabel>
@@ -560,7 +488,7 @@ const Donations = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="valorEstimado"
+                      name="estimatedValue"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Valor Estimado</FormLabel>

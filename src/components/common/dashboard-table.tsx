@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/common/data-table";
 import { LoaderSpinner } from "./loader-spinner";

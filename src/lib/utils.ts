@@ -55,6 +55,10 @@ export function formatDateAndTime(dateAndTime: string | Date) {
   });
 }
 
+export const formatDecimalForAPI = (value: string) => {
+  return value.replace(',', '.');
+};
+
 export function parseCurrency(
   value: string | number | undefined | null
 ): number {

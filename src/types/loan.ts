@@ -1,15 +1,17 @@
-export type LoanStatus = "active" | "returned" | "overdue";
+export type LoanStatus = "pending" | "returned" | "overdue";
 
 export interface Loan {
   id: number;
-  pacienteId: number;
+  patientId: number;
+  patientName: string;
   item: string;
-  quantidade: number;
-  unidade: string;
-  dataEmprestimo: string; // ISO date
-  dataDevolucaoPrevista?: string; // ISO date
-  declaracaoAssinada: boolean;
-  status?: LoanStatus
-  criadoEm?: string;
-  atualizadoEm?: string;
+  equipment: string;
+  quantity: number;
+  unit: string;
+  loanDate: string;
+  returnDate: string;
+  signedDeclaration: boolean;
+  status: LoanStatus;
+  createdAt: string;
+  updatedAt?: string;
 }

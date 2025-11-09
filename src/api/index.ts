@@ -32,13 +32,13 @@ export async function apiRequest<ResponseType>(config: AxiosRequestConfig) {
 }
 
 export async function signIn(data: { email: string; password: string }) {
-  const { data: response } = await apiRequest<{ accessToken: string }>({
+  const { data: response } = await apiRequest<string>({
     method: "POST",
     url: "/user/signin",
     data,
   });
 
-  return response.accessToken;
+  return response;
 }
 
 export async function getUserData() {
@@ -47,7 +47,7 @@ export async function getUserData() {
     url: `/user`,
   });
 
-  return user
+  return user;
 }
 
 export async function createUser(userData: {

@@ -48,12 +48,12 @@ const appointmentsHeader = [
 ];
 
 const defaultValues: RegisterAppointmentFormValues = {
-  data: "",
+  appointmentDate: "",
   patientName: "",
-  pacienteId: 0,
-  profissional: "",
-  especialidade: "",
-  observacoes: "",
+  patientId: 0,
+  professional: "",
+  specialty: "",
+  notes: "",
   type: "cancer",
   status: "ongoing",
 };
@@ -75,7 +75,8 @@ const Appointments = () => {
   const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number>(0);
-  const [selectedAppointmentDetails, setSelectedAppointmentDetails] = useState<Appointment | null>(null);
+  const [selectedAppointmentDetails, setSelectedAppointmentDetails] =
+    useState<Appointment | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const form = useForm<RegisterAppointmentFormValues>({
@@ -85,18 +86,21 @@ const Appointments = () => {
 
   const translatedAppointments = appointmentsList.map((appointment) => ({
     ...appointment,
-    appointmentDate: formatDateAndTime(appointment.data),
-    type:
-      appointmentTypeLabels[appointment.especialidade.toLowerCase()] || appointment.especialidade,   
-    professionalName: appointment.profissional || "-",
-    specialty: appointment.especialidade || "-",
+    appointmentDate: formatDateAndTime(appointment.appointmentDate),
+    type: appointmentTypeLabels[appointment.type] || appointment.specialty,
+    professionalName: appointment.professional || "-",
+    specialty: appointment.specialty || "-",
+    status: appointmentStatusLabels[appointment.status] || appointment.status,
   }));
 
   const filteredAppointments = translatedAppointments.filter(
-    (appointment) =>      
+    (appointment) =>
+      appointment.patientName.toLowerCase().includes(filter.toLowerCase()) ||
       appointment.type.toLowerCase().includes(filter.toLowerCase()) ||
       appointment.status.toLowerCase().includes(filter.toLowerCase()) ||
-      (appointment.profissional || "").toLowerCase().includes(filter.toLowerCase())
+      (appointment.professional || "")
+        .toLowerCase()
+        .includes(filter.toLowerCase())
   );
 
   async function getList() {
@@ -134,7 +138,7 @@ const Appointments = () => {
       const patient = patients.find((p) => p.id === selectedPatientId);
       if (patient) {
         form.setValue("patientName", patient.name);
-        form.setValue("pacienteId", patient.id);
+        form.setValue("patientId", patient.id);
       }
     }
   }, [selectedPatientId, patients, form]);
@@ -142,7 +146,7 @@ const Appointments = () => {
   async function handleFormSubmit(data: RegisterAppointmentFormValues) {
     try {
       setIsLoading(true);
-      form.setValue("pacienteId", selectedPatientId);
+      form.setValue("patientId", selectedPatientId);
       console.log(data);
       const response = await addAppointment(data);
       if (response) {
@@ -161,18 +165,9 @@ const Appointments = () => {
   const todayString = today.toISOString().split("T")[0];
 
   const appointmentsToday = appointmentsList.filter((appointment) => {
-    const appointmentDate = appointment.data?.split("T")[0];
+    const appointmentDate = appointment.appointmentDate?.split("T")[0];
     return appointmentDate === todayString;
   });
-
-  const appointmentsByPatient = appointmentsList.reduce((acc, apt) => {
-    const key = apt.patientName.toString();
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(apt);
-    return acc;
-  }, {} as Record<string, Appointment[]>);
 
   return (
     <div className="flex flex-col gap-6">
@@ -216,7 +211,9 @@ const Appointments = () => {
             setSearchFilter={setFilter}
             title="Últimos atendimentos"
             onDetailsClick={(item) => {
-              const appointment = appointmentsList.find((a) => a.id === item.id);
+              const appointment = appointmentsList.find(
+                (a) => a.id === item.id
+              );
               if (appointment) {
                 setSelectedAppointmentDetails(appointment);
                 setIsDetailsModalOpen(true);
@@ -232,85 +229,77 @@ const Appointments = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Paciente</label>
-                    <p className="text-sm text-gray-900">{selectedAppointmentDetails.patientName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700">Data e Hora</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Paciente
+                    </label>
                     <p className="text-sm text-gray-900">
-                      {formatDateAndTime(selectedAppointmentDetails.data)}
+                      {selectedAppointmentDetails.patientName}
                     </p>
                   </div>
-                  {selectedAppointmentDetails.profissional && (
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Data e Hora
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDateAndTime(
+                        selectedAppointmentDetails.appointmentDate
+                      )}
+                    </p>
+                  </div>
+                  {selectedAppointmentDetails.professional && (
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Profissional</label>
-                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.profissional}</p>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Profissional
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedAppointmentDetails.professional}
+                      </p>
                     </div>
                   )}
-                  {selectedAppointmentDetails.especialidade && (
+                  {selectedAppointmentDetails.specialty && (
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Especialidade</label>
-                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.especialidade}</p>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Especialidade
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedAppointmentDetails.specialty}
+                      </p>
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Tipo</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Tipo
+                    </label>
                     <p className="text-sm text-gray-900">
-                      {appointmentTypeLabels[selectedAppointmentDetails.type?.toLowerCase()] || selectedAppointmentDetails.type}
+                      {appointmentTypeLabels[
+                        selectedAppointmentDetails.type?.toLowerCase()
+                      ] || selectedAppointmentDetails.type}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Status</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Status
+                    </label>
                     <p className="text-sm text-gray-900">
-                      {appointmentStatusLabels[selectedAppointmentDetails.status?.toLowerCase()] || selectedAppointmentDetails.status}
+                      {appointmentStatusLabels[
+                        selectedAppointmentDetails.status?.toLowerCase()
+                      ] || selectedAppointmentDetails.status}
                     </p>
                   </div>
-                  {selectedAppointmentDetails.observacoes && (
+                  {selectedAppointmentDetails.notes && (
                     <div className="col-span-2">
-                      <label className="text-sm font-semibold text-gray-700">Observações</label>
-                      <p className="text-sm text-gray-900">{selectedAppointmentDetails.observacoes}</p>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Observações
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedAppointmentDetails.notes}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
             )}
           </DetailsModal>
-          <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-semibold">Atendimentos por Paciente</h3>
-            {Object.entries(appointmentsByPatient).map(([patientName, apts]) => (
-              <Card key={patientName}>
-                <CardHeader>
-                  <CardTitle>{patientName}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {apts.map((apt) => (
-                      <div key={apt.id} className="border-b pb-2">
-                        <p className="text-sm">
-                          <strong>Data:</strong> {formatDateAndTime(apt.data)}
-                        </p>
-                        {apt.profissional && (
-                          <p className="text-sm">
-                            <strong>Profissional:</strong> {apt.profissional}
-                          </p>
-                        )}
-                        {apt.especialidade && (
-                          <p className="text-sm">
-                            <strong>Especialidade:</strong> {apt.especialidade}
-                          </p>
-                        )}
-                        {apt.observacoes && (
-                          <p className="text-sm">
-                            <strong>Observações:</strong> {apt.observacoes}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
         <TabsContent value="adicionar">
           <Card>
@@ -337,7 +326,7 @@ const Appointments = () => {
                               field.onChange(patientName);
                               if (patientId) {
                                 setSelectedPatientId(patientId);
-                                form.setValue("pacienteId", patientId);
+                                form.setValue("patientId", patientId);
                               }
                             }}
                             placeholder="Buscar paciente..."
@@ -350,12 +339,15 @@ const Appointments = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="profissional"
+                      name="professional"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Nome do Profissional</FormLabel>
                           <FormControl>
-                            <Input placeholder="Nome do profissional" {...field} />
+                            <Input
+                              placeholder="Nome do profissional"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -363,7 +355,7 @@ const Appointments = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="especialidade"
+                      name="specialty"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Especialidade</FormLabel>
@@ -394,7 +386,9 @@ const Appointments = () => {
                             <SelectContent>
                               <SelectItem value="cancer">Oncologia</SelectItem>
                               <SelectItem value="family">Familiar</SelectItem>
-                              <SelectItem value="other">Outro Diagnóstico</SelectItem>
+                              <SelectItem value="other">
+                                Outro Diagnóstico
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -418,8 +412,12 @@ const Appointments = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="ongoing">Em andamento</SelectItem>
-                              <SelectItem value="completed">Concluído</SelectItem>
+                              <SelectItem value="ongoing">
+                                Em andamento
+                              </SelectItem>
+                              <SelectItem value="completed">
+                                Concluído
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -429,7 +427,7 @@ const Appointments = () => {
 
                     <FormField
                       control={form.control}
-                      name="data"
+                      name="appointmentDate"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Data e Hora</FormLabel>
@@ -443,7 +441,7 @@ const Appointments = () => {
                   </div>
                   <FormField
                     control={form.control}
-                    name="observacoes"
+                    name="notes"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Observações</FormLabel>

@@ -2,7 +2,7 @@
 import { z } from "zod";
 
 export const RegisterWorkshopFormSchema = z.object({
-  name: z.string().min(1, "Nome da oficina é obrigatório"),
+  name: z.string().min(1, "Workshop name is required"),
   weekday: z.enum([
     "monday",
     "tuesday",
@@ -10,13 +10,18 @@ export const RegisterWorkshopFormSchema = z.object({
     "thursday",
     "friday"
   ], {
-    errorMap: () => ({ message: "Dia da semana inválido" })
+    errorMap: () => ({ message: "Invalid weekday" })
   }),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Horário de início inválido"),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Horário de fim inválido"),
-  participants: z.number().int().min(0, "Participantes deve ser pelo menos 0"),
+  description: z.string().optional(),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time"),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time"),
+  participantsCount: z.number().int().min(0, "Participants must be at least 0"),
+  participants: z.union([
+    z.array(z.object({ id: z.number() })),
+    z.array(z.string())
+  ]).optional(),
   status: z.enum(["active", "inactive", "cancelled"], {
-    errorMap: () => ({ message: "Status inválido" })
+    errorMap: () => ({ message: "Invalid status" })
   }),
 });
 

@@ -52,6 +52,7 @@ import {
 import { DetailsModal } from "@/components/common/details-modal";
 import { getPatientReport } from "@/api/report";
 import { formatToBRL } from "@/lib/utils";
+import { SecondaryInfoCard } from "@/components/common/secondary-info-card";
 
 const typeLabels: Record<string, string> = {
   cancer: "Oncologia",
@@ -62,6 +63,13 @@ const typeLabels: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   ongoing: "Em Tratamento",
   completed: "Finalizado",
+};
+const weekdayMap: Record<string, string> = {
+  monday: "Segunda-feira",
+  tuesday: "Terça-feira",
+  wednesday: "Quarta-feira",
+  thursday: "Quinta-feira",
+  friday: "Sexta-feira",
 };
 
 const maritalStatusOptions = [
@@ -83,23 +91,21 @@ const defaultValues: RegisterPatientFormValues = {
   name: "",
   cpf: "",
   rg: "",
-  dataNascimento: "",
-  telefone: "",
-  enderecoCompleto: "",
-  cep: "",
-  estadoCivil: "single", // Valor padrão para estado civil
-  nomeEsposa: "",
-  filhos: [],
+  birthDate: "",
+  phone: "",
+  address: "",
+  zipCode: "",
+  maritalStatus: "single",
+  spouseName: "",
+  children: [],
   type: "cancer",
   status: "ongoing",
-  nomeCompleto: "",
 };
 
 const Patients = () => {
   const [filter, setFilter] = useState("");
   const [patientsList, setPatientsList] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -165,15 +171,32 @@ const Patients = () => {
     loadRelatedData();
   }, []);
 
+  const prepareSubmitData = (data: RegisterPatientFormValues) => {
+    let childrenArray: { name: string; age: number }[] | undefined;
+
+    if (typeof data.children === "string") {
+      try {
+        const parsed = JSON.parse(data.children);
+        if (Array.isArray(parsed)) {
+          childrenArray = parsed;
+        }
+      } catch {
+        childrenArray = undefined;
+      }
+    } else {
+      childrenArray = data.children;
+    }
+
+    return {
+      ...data,
+      children: childrenArray,
+    };
+  };
+
   async function handleFormSubmit(data: RegisterPatientFormValues) {
     try {
       setIsLoading(true);
-      // Remover spouse e children se os checkboxes estiverem marcados
-      const submitData = {
-        ...data,
-        spouse: noSpouse ? "" : data.nomeEsposa,
-        children: noChildren ? "" : data.filhos,
-      };
+      const submitData = prepareSubmitData(data);
       const response = await addPatient(submitData);
       if (response) {
         toast.success("Paciente cadastrado com sucesso!");
@@ -191,16 +214,16 @@ const Patients = () => {
 
   const getPatientOverview = (patient: Patient) => {
     const patientAppointments = appointments.filter(
-      (apt) => apt.pacienteId === patient.id || apt.patientName === patient.name
+      (apt) => apt.patientId === patient.id || apt.patientName === patient.name
     );
     const patientLoans = loans.filter(
-      (loan) => loan.pacienteId === patient.id && loan.status === "active"
+      (loan) => loan.patientId === patient.id && loan.status === "pending"
     );
     const patientDonations = donations.filter(
-      (donation) => donation.pacienteId === patient.id
+      (donation) => donation.patientId === patient.id
     );
     const patientWorkshops = workshops.filter(
-      (workshop) => workshop?.participantes?.length ?? 0 > 0
+      (workshop) => workshop?.participants?.length ?? 0 > 0
     );
 
     return {
@@ -302,8 +325,7 @@ const Patients = () => {
                         Nome Completo
                       </label>
                       <p className="text-sm text-gray-900">
-                        {selectedPatientDetails.nomeCompleto ||
-                          selectedPatientDetails.name}
+                        {selectedPatientDetails.name}
                       </p>
                     </div>
                     <div>
@@ -344,59 +366,49 @@ const Patients = () => {
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.dataNascimento ||
-                      selectedPatientDetails.birthDate) && (
+                    {selectedPatientDetails.birthDate && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           Data de Nascimento
                         </label>
                         <p className="text-sm text-gray-900">
                           {new Date(
-                            selectedPatientDetails.dataNascimento ||
-                              selectedPatientDetails.birthDate ||
-                              ""
+                            selectedPatientDetails.birthDate + "T00:00:00"
                           ).toLocaleDateString("pt-BR")}
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.telefone ||
-                      selectedPatientDetails.phone) && (
+                    {selectedPatientDetails.phone && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           Telefone
                         </label>
                         <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.telefone ||
-                            selectedPatientDetails.phone}
+                          {selectedPatientDetails.phone}
                         </p>
                       </div>
                     )}
-                    {((selectedPatientDetails as any).cep ||
-                      selectedPatientDetails.zipCode) && (
+                    {selectedPatientDetails.zipCode && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           CEP
                         </label>
                         <p className="text-sm text-gray-900">
-                          {(selectedPatientDetails as any).cep ||
-                            selectedPatientDetails.zipCode}
+                          {selectedPatientDetails.zipCode}
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.enderecoCompleto ||
-                      selectedPatientDetails.address) && (
+                    {selectedPatientDetails.address && (
                       <div className="col-span-2">
                         <label className="text-sm font-semibold text-gray-700">
                           Endereço
                         </label>
                         <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.enderecoCompleto ||
-                            selectedPatientDetails.address}
+                          {selectedPatientDetails.address}
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.estadoCivil ||
-                      selectedPatientDetails.maritalStatus) && (
+                    {selectedPatientDetails.maritalStatus && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           Estado Civil
@@ -404,23 +416,19 @@ const Patients = () => {
                         <p className="text-sm text-gray-900">
                           {maritalStatusOptions.find(
                             (opt) =>
-                              opt.value ===
-                              (selectedPatientDetails.estadoCivil ||
-                                selectedPatientDetails.maritalStatus)
-                          )?.label ||
-                            selectedPatientDetails.estadoCivil ||
-                            selectedPatientDetails.maritalStatus}
+                              opt.value === selectedPatientDetails.maritalStatus
+                          )?.label || selectedPatientDetails.maritalStatus}
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.nomeEsposa ||
+                    {(selectedPatientDetails.spouseName ||
                       selectedPatientDetails.spouse) && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           Cônjuge
                         </label>
                         <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.nomeEsposa ||
+                          {selectedPatientDetails.spouseName ||
                             selectedPatientDetails.spouse}
                         </p>
                       </div>
@@ -441,20 +449,20 @@ const Patients = () => {
                 </div>
 
                 {/* Filhos */}
-                {selectedPatientDetails.filhos &&
-                  selectedPatientDetails.filhos.length > 0 && (
+                {selectedPatientDetails.children &&
+                  selectedPatientDetails.children.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Filhos</h3>
                       <div className="space-y-2">
-                        {selectedPatientDetails.filhos.map(
+                        {selectedPatientDetails.children.map(
                           (
-                            filho: { nome: string; idade: number },
+                            child: { name: string; age: number },
                             index: number
                           ) => (
                             <div key={index} className="border-b pb-2">
                               <p className="text-sm">
-                                <strong>Nome:</strong> {filho.nome} -{" "}
-                                <strong>Idade:</strong> {filho.idade} anos
+                                <strong>Nome:</strong> {child.name} -{" "}
+                                <strong>Idade:</strong> {child.age} anos
                               </p>
                             </div>
                           )
@@ -462,43 +470,80 @@ const Patients = () => {
                       </div>
                     </div>
                   )}
+                <div className="w-full h-[1px] bg-cyan-700" />
+                {selectedPatientDetails && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Visão Geral</h3>
 
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <SecondaryInfoCard
+                        title="Atendimentos"
+                        value={
+                          getPatientOverview(selectedPatientDetails)
+                            .appointments
+                        }
+                        description="Realizados"
+                      />
+                      <SecondaryInfoCard
+                        title="Empréstimos"
+                        value={
+                          getPatientOverview(selectedPatientDetails).activeLoans
+                        }
+                        description="Ativos"
+                      />
+                      <SecondaryInfoCard
+                        title="Doações"
+                        value={
+                          getPatientOverview(selectedPatientDetails).donations
+                        }
+                        description="Recebidas"
+                      />
+                      <SecondaryInfoCard
+                        title="Oficinas"
+                        value={
+                          getPatientOverview(selectedPatientDetails).workshops
+                        }
+                        description="Participações"
+                      />
+                    </div>
+                  </div>
+                )}
                 {/* Atendimentos */}
-                {selectedPatientDetails.atendimentos &&
-                  selectedPatientDetails.atendimentos.length > 0 && (
+                {selectedPatientDetails.appointments &&
+                  selectedPatientDetails.appointments.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">
                         Atendimentos (
-                        {selectedPatientDetails.atendimentos.length})
+                        {selectedPatientDetails.appointments.length})
                       </h3>
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {selectedPatientDetails.atendimentos.map(
-                          (atendimento: any) => (
+                        {selectedPatientDetails.appointments.map(
+                          (atendimento: Appointment) => (
                             <div key={atendimento.id} className="border-b pb-2">
                               <p className="text-sm">
                                 <strong>Data:</strong>{" "}
-                                {atendimento.data
+                                {atendimento.appointmentDate
                                   ? new Date(
-                                      atendimento.data
+                                      atendimento.appointmentDate
                                     ).toLocaleDateString("pt-BR")
                                   : "-"}
                               </p>
-                              {atendimento.profissional && (
+                              {atendimento.professional && (
                                 <p className="text-sm">
                                   <strong>Profissional:</strong>{" "}
-                                  {atendimento.profissional}
+                                  {atendimento.professional}
                                 </p>
                               )}
-                              {atendimento.especialidade && (
+                              {atendimento.specialty && (
                                 <p className="text-sm">
                                   <strong>Especialidade:</strong>{" "}
-                                  {atendimento.especialidade}
+                                  {atendimento.specialty}
                                 </p>
                               )}
-                              {atendimento.observacoes && (
+                              {atendimento.notes && (
                                 <p className="text-sm">
                                   <strong>Observações:</strong>{" "}
-                                  {atendimento.observacoes}
+                                  {atendimento.notes}
                                 </p>
                               )}
                             </div>
@@ -509,33 +554,32 @@ const Patients = () => {
                   )}
 
                 {/* Empréstimos */}
-                {selectedPatientDetails.emprestimos &&
-                  selectedPatientDetails.emprestimos.length > 0 && (
+                {selectedPatientDetails.loans &&
+                  selectedPatientDetails.loans.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">
-                        Empréstimos ({selectedPatientDetails.emprestimos.length}
-                        )
+                        Empréstimos ({selectedPatientDetails.loans.length})
                       </h3>
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {selectedPatientDetails.emprestimos.map(
-                          (emprestimo: any) => (
+                        {selectedPatientDetails.loans.map(
+                          (emprestimo: Loan) => (
                             <div key={emprestimo.id} className="border-b pb-2">
                               <p className="text-sm">
                                 <strong>Item:</strong> {emprestimo.item}
                               </p>
                               <p className="text-sm">
                                 <strong>Data do Empréstimo:</strong>{" "}
-                                {emprestimo.dataEmprestimo
+                                {emprestimo.loanDate
                                   ? new Date(
-                                      emprestimo.dataEmprestimo
+                                      emprestimo.loanDate
                                     ).toLocaleDateString("pt-BR")
                                   : "-"}
                               </p>
-                              {emprestimo.dataDevolucaoPrevista && (
+                              {emprestimo.returnDate && (
                                 <p className="text-sm">
-                                  <strong>Data Prevista de Devolução:</strong>{" "}
+                                  <strong>Data de Devolução:</strong>{" "}
                                   {new Date(
-                                    emprestimo.dataDevolucaoPrevista
+                                    emprestimo.returnDate
                                   ).toLocaleDateString("pt-BR")}
                                 </p>
                               )}
@@ -547,69 +591,74 @@ const Patients = () => {
                   )}
 
                 {/* Doações */}
-                {selectedPatientDetails.doacoes &&
-                  selectedPatientDetails.doacoes.length > 0 && (
+                {selectedPatientDetails.donations &&
+                  selectedPatientDetails.donations.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">
-                        Doações ({selectedPatientDetails.doacoes.length})
+                        Doações ({selectedPatientDetails.donations.length})
                       </h3>
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {selectedPatientDetails.doacoes.map((doacao: any) => (
-                          <div key={doacao.id} className="border-b pb-2">
-                            <p className="text-sm">
-                              <strong>Descrição:</strong> {doacao.descricaoItem}
-                            </p>
-                            {doacao.quantidade && (
+                        {selectedPatientDetails.donations.map(
+                          (doacao: Donation) => (
+                            <div key={doacao.id} className="border-b pb-2">
                               <p className="text-sm">
-                                <strong>Quantidade:</strong> {doacao.quantidade}
+                                <strong>Descrição:</strong>{" "}
+                                {doacao.itemDescription}
                               </p>
-                            )}
-                            {doacao.valorEstimado && (
-                              <p className="text-sm">
-                                <strong>Valor Estimado:</strong>{" "}
-                                {formatToBRL(doacao.valorEstimado)}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                              {doacao.quantity && (
+                                <p className="text-sm">
+                                  <strong>Quantidade:</strong> {doacao.quantity}
+                                </p>
+                              )}
+                              {doacao.estimatedValue && (
+                                <p className="text-sm">
+                                  <strong>Valor Estimado:</strong>{" "}
+                                  {formatToBRL(doacao.estimatedValue)}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
 
                 {/* Oficinas */}
-                {selectedPatientDetails.oficinas &&
-                  selectedPatientDetails.oficinas.length > 0 && (
+                {selectedPatientDetails.workshops &&
+                  selectedPatientDetails.workshops.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">
-                        Oficinas ({selectedPatientDetails.oficinas.length})
+                        Oficinas ({selectedPatientDetails.workshops.length})
                       </h3>
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {selectedPatientDetails.oficinas.map((oficina: any) => (
-                          <div key={oficina.id} className="border-b pb-2">
-                            <p className="text-sm">
-                              <strong>Nome:</strong> {oficina.name}
-                            </p>
-                            {oficina.diaSemana && (
+                        {selectedPatientDetails.workshops.map(
+                          (oficina: Workshop) => (
+                            <div key={oficina.id} className="border-b pb-2">
                               <p className="text-sm">
-                                <strong>Dia da Semana:</strong>{" "}
-                                {oficina.diaSemana}
+                                <strong>Nome:</strong> {oficina.name}
                               </p>
-                            )}
-                          </div>
-                        ))}
+                              {oficina.weekday && (
+                                <p className="text-sm">
+                                  <strong>Dia da Semana:</strong>{" "}
+                                  {weekdayMap[oficina.weekday]}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
 
                 {/* Mensagem quando não há relacionamentos */}
-                {(!selectedPatientDetails.atendimentos ||
-                  selectedPatientDetails.atendimentos.length === 0) &&
-                  (!selectedPatientDetails.emprestimos ||
-                    selectedPatientDetails.emprestimos.length === 0) &&
-                  (!selectedPatientDetails.doacoes ||
-                    selectedPatientDetails.doacoes.length === 0) &&
-                  (!selectedPatientDetails.oficinas ||
-                    selectedPatientDetails.oficinas.length === 0) && (
+                {(!selectedPatientDetails.appointments ||
+                  selectedPatientDetails.appointments.length === 0) &&
+                  (!selectedPatientDetails.loans ||
+                    selectedPatientDetails.loans.length === 0) &&
+                  (!selectedPatientDetails.donations ||
+                    selectedPatientDetails.donations.length === 0) &&
+                  (!selectedPatientDetails.workshops ||
+                    selectedPatientDetails.workshops.length === 0) && (
                     <div className="text-sm text-gray-500 italic">
                       Nenhum relacionamento registrado (atendimentos,
                       empréstimos, doações ou oficinas).
@@ -618,41 +667,6 @@ const Patients = () => {
               </div>
             )}
           </DetailsModal>
-          {selectedPatient && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Visão Geral - {selectedPatient.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <InfoCard
-                    title="Atendimentos"
-                    value={getPatientOverview(selectedPatient).appointments}
-                    description="Realizados"
-                    icon={<Users size={20} />}
-                  />
-                  <InfoCard
-                    title="Empréstimos"
-                    value={getPatientOverview(selectedPatient).activeLoans}
-                    description="Ativos"
-                    icon={<Users size={20} />}
-                  />
-                  <InfoCard
-                    title="Doações"
-                    value={getPatientOverview(selectedPatient).donations}
-                    description="Recebidas"
-                    icon={<Users size={20} />}
-                  />
-                  <InfoCard
-                    title="Oficinas"
-                    value={getPatientOverview(selectedPatient).workshops}
-                    description="Participações"
-                    icon={<Users size={20} />}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
         <TabsContent value="adicionar">
           <Card>
@@ -722,7 +736,7 @@ const Patients = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="dataNascimento"
+                        name="birthDate"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Data de Nascimento</FormLabel>
@@ -738,7 +752,7 @@ const Patients = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="telefone"
+                        name="phone"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Telefone</FormLabel>
@@ -756,7 +770,7 @@ const Patients = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="estadoCivil"
+                        name="maritalStatus"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Estado Civil</FormLabel>
@@ -789,7 +803,7 @@ const Patients = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="cep"
+                        name="zipCode"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>CEP</FormLabel>
@@ -807,7 +821,7 @@ const Patients = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="enderecoCompleto"
+                        name="address"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Endereço</FormLabel>
@@ -831,7 +845,7 @@ const Patients = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name="nomeEsposa"
+                        name="spouseName"
                         render={({ field }) => (
                           <FormItem>
                             <div className="flex items-center gap-2">
@@ -864,7 +878,7 @@ const Patients = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="filhos"
+                        name="children"
                         render={({ field }) => (
                           <FormItem>
                             <div className="flex items-center gap-2">
@@ -876,7 +890,9 @@ const Patients = () => {
                                   onChange={(e) => {
                                     setNoChildren(e.target.checked);
                                     if (e.target.checked) {
-                                      field.onChange([]); // use array vazio em vez de string
+                                      field.onChange([]);
+                                    } else {
+                                      field.onChange([{ name: "", age: 0 }]);
                                     }
                                   }}
                                   className="w-4 h-4 cursor-pointer"
@@ -885,38 +901,94 @@ const Patients = () => {
                               </label>
                             </div>
                             <FormControl>
-                              {Array.isArray(field.value) && !noChildren
-                                ? field.value.map((filho, idx) => (
-                                    <div key={idx} className="flex gap-2">
-                                      <Input
-                                        placeholder="Nome do filho"
-                                        value={filho.nome}
-                                        onChange={(e) => {
-                                          // const newFilhos = [...field.value];
-                                          // newFilhos[idx].nome = e.target.value;
-                                          // field.onChange(newFilhos);
-                                        }}
-                                        disabled={noChildren}
-                                        name={`filhos[${idx}].nome`}
-                                      />
-                                      <Input
-                                        placeholder="Idade do filho"
-                                        value={String(filho.idade)}
-                                        onChange={(e) => {
-                                          // const newFilhos = [...field.value];
-                                          // newFilhos[idx].idade = parseInt(
-                                          //   e.target.value,
-                                          //   10
-                                          // );
-                                          // field.onChange(newFilhos);
-                                        }}
-                                        disabled={noChildren}
-                                        name={`filhos[${idx}].idade`}
-                                      />
-                                    </div>
-                                  ))
-                                : null}
+                              <div>
+                                {Array.isArray(field.value) &&
+                                field.value.length > 0 &&
+                                !noChildren
+                                  ? field.value.map((child, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="flex gap-2 mb-2"
+                                      >
+                                        <Input
+                                          placeholder="Nome do filho"
+                                          value={child.name || ""}
+                                          onChange={(e) => {
+                                            if (!field.value) return;
+                                            const newChildren = [
+                                              ...field.value,
+                                            ];
+                                            newChildren[idx] = {
+                                              ...newChildren[idx],
+                                              name: e.target.value,
+                                            };
+                                            field.onChange(newChildren);
+                                          }}
+                                          disabled={noChildren}
+                                          name={`children[${idx}].name`}
+                                        />
+                                        <Input
+                                          type="number"
+                                          placeholder="Idade do filho"
+                                          value={child.age || ""}
+                                          onChange={(e) => {
+                                            if (!field.value) return;
+                                            const newChildren = [
+                                              ...field.value,
+                                            ];
+                                            newChildren[idx] = {
+                                              ...newChildren[idx],
+                                              age:
+                                                parseInt(e.target.value, 10) ||
+                                                0,
+                                            };
+                                            field.onChange(newChildren);
+                                          }}
+                                          disabled={noChildren}
+                                          name={`children[${idx}].age`}
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            const newChildren =
+                                              field.value &&
+                                              field.value.filter(
+                                                (_, i) => i !== idx
+                                              );
+                                            field.onChange(newChildren);
+                                          }}
+                                          disabled={noChildren}
+                                        >
+                                          Remover
+                                        </Button>
+                                      </div>
+                                    ))
+                                  : null}
+                              </div>
                             </FormControl>
+                            {!noChildren && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const currentValue = Array.isArray(
+                                    field.value
+                                  )
+                                    ? field.value
+                                    : [];
+                                  field.onChange([
+                                    ...currentValue,
+                                    { name: "", age: 0 },
+                                  ]);
+                                }}
+                                disabled={noChildren}
+                              >
+                                Adicionar Filho
+                              </Button>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}

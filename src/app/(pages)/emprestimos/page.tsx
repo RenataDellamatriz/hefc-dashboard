@@ -35,9 +35,6 @@ import { PatientAutocomplete } from "@/components/common/patient-autocomplete";
 import { DetailsModal } from "@/components/common/details-modal";
 
 const loansHeader = [
-  { label: "Data do empréstimo", key: "loanDate" },
-  { label: "Data prevista devolução", key: "expectedReturnDate" },
-  { label: "Data da devolução", key: "returnDate" },
   { label: "Paciente", key: "patientName" },
   { label: "Item", key: "item" },
   { label: "Quantidade", key: "quantity" },
@@ -48,21 +45,18 @@ const loansHeader = [
 const defaultValues: RegisterLoanFormValues = {
   loanDate: "",
   returnDate: "",
-  expectedReturnDate: "",
   patientName: "",
-  patientId: undefined,
+  patientId: 0,
   item: "",
-  equipment: "",
-  quantity: undefined,
-  unit: "",
+  quantity: 0,
   signedDeclaration: false,
-  status: "active",
+  status: "pending",
 };
 
 function translateStatus(status: string): string {
   switch (status) {
-    case "active":
-      return "Em andamento";
+    case "pending":
+      return "Pendente";
     case "returned":
       return "Devolvido";
     case "overdue":
@@ -77,8 +71,12 @@ const Loans = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<number | undefined>();
-  const [selectedLoanDetails, setSelectedLoanDetails] = useState<Loan | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<
+    number | undefined
+  >();
+  const [selectedLoanDetails, setSelectedLoanDetails] = useState<Loan | null>(
+    null
+  );
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const form = useForm<RegisterLoanFormValues>({
@@ -88,10 +86,9 @@ const Loans = () => {
 
   const translatedLoans = loansList.map((loan) => ({
     ...loan,
-    status: translateStatus(loan.status),
+    status: loan.status && translateStatus(loan.status),
     loanDate: formatDate(loan.loanDate),
-    returnDate: loan.returnDate ? formatDate(loan.returnDate) : "-",
-    expectedReturnDate: loan.expectedReturnDate ? formatDate(loan.expectedReturnDate) : "-",
+    returnDate: formatDate(loan.returnDate),
     item: loan.item || loan.equipment || "-",
     quantity: loan.quantity ? `${loan.quantity} ${loan.unit || ""}` : "-",
   }));
@@ -100,7 +97,7 @@ const Loans = () => {
     (loan) =>
       loan.patientName.toLowerCase().includes(filter.toLowerCase()) ||
       (loan.item || "").toLowerCase().includes(filter.toLowerCase()) ||
-      loan.status.toLowerCase().includes(filter.toLowerCase())
+      (loan.status && loan.status.toLowerCase().includes(filter.toLowerCase()))
   );
 
   async function getList() {
@@ -146,6 +143,7 @@ const Loans = () => {
   async function handleFormSubmit(data: RegisterLoanFormValues) {
     try {
       setIsLoading(true);
+      console.log(data)
       const response = await addLoan(data);
       if (response) {
         toast.success("Empréstimo registrado com sucesso!");
@@ -159,7 +157,7 @@ const Loans = () => {
     }
   }
 
-  const activeLoans = loansList.filter((loan) => loan.status === "active");
+  const activeLoans = loansList.filter((loan) => loan.status === "pending");
   const returnedLoans = loansList.filter((loan) => loan.status === "returned");
 
   return (
@@ -216,43 +214,65 @@ const Loans = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Paciente</label>
-                    <p className="text-sm text-gray-900">{selectedLoanDetails.patientName}</p>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Paciente
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedLoanDetails.patientName}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Item</label>
-                    <p className="text-sm text-gray-900">{selectedLoanDetails.item || selectedLoanDetails.equipment}</p>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Item
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedLoanDetails.item ||
+                        selectedLoanDetails.equipment}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Data do Empréstimo</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedLoanDetails.loanDate)}</p>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Data do Empréstimo
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {formatDate(selectedLoanDetails.loanDate)}
+                    </p>
                   </div>
-                  {selectedLoanDetails.expectedReturnDate && (
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700">Data Prevista de Devolução</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedLoanDetails.expectedReturnDate)}</p>
-                    </div>
-                  )}
+
                   {selectedLoanDetails.returnDate && (
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Data de Devolução</label>
-                      <p className="text-sm text-gray-900">{formatDate(selectedLoanDetails.returnDate)}</p>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Data de Devolução
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {formatDate(selectedLoanDetails.returnDate)}
+                      </p>
                     </div>
                   )}
                   {selectedLoanDetails.quantity && (
                     <div>
-                      <label className="text-sm font-semibold text-gray-700">Quantidade</label>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Quantidade
+                      </label>
                       <p className="text-sm text-gray-900">
-                        {selectedLoanDetails.quantity} {selectedLoanDetails.unit || ""}
+                        {selectedLoanDetails.quantity}{" "}
+                        {selectedLoanDetails.unit || ""}
                       </p>
                     </div>
                   )}
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Status</label>
-                    <p className="text-sm text-gray-900">{translateStatus(selectedLoanDetails.status)}</p>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Status
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedLoanDetails.status &&
+                        translateStatus(selectedLoanDetails.status)}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold text-gray-700">Declaração Assinada</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Declaração Assinada
+                    </label>
                     <p className="text-sm text-gray-900">
                       {selectedLoanDetails.signedDeclaration ? "Sim" : "Não"}
                     </p>
@@ -314,7 +334,7 @@ const Loans = () => {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="quantity"
@@ -326,7 +346,9 @@ const Loans = () => {
                               type="number"
                               placeholder="Quantidade"
                               {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value))
+                              }
                               disabled={isLoading}
                             />
                           </FormControl>
@@ -334,23 +356,7 @@ const Loans = () => {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="unit"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unidade</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Ex: unidade, kg, litros"
-                              {...field}
-                              disabled={isLoading}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
                     <FormField
                       control={form.control}
                       name="status"
@@ -366,8 +372,12 @@ const Loans = () => {
                               <SelectValue placeholder="Selecione o status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="active">Em andamento</SelectItem>
-                              <SelectItem value="returned">Devolvido</SelectItem>
+                              <SelectItem value="pending">
+                                Em andamento
+                              </SelectItem>
+                              <SelectItem value="returned">
+                                Devolvido
+                              </SelectItem>
                               <SelectItem value="overdue">Atrasado</SelectItem>
                             </SelectContent>
                           </Select>
@@ -396,10 +406,10 @@ const Loans = () => {
                     />
                     <FormField
                       control={form.control}
-                      name="expectedReturnDate"
+                      name="returnDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Data Prevista de Devolução</FormLabel>
+                          <FormLabel>Data de devolução</FormLabel>
                           <FormControl>
                             <Input
                               type="date"

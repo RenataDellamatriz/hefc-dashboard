@@ -1,13 +1,13 @@
 import * as z from "zod";
 
 export const RegisterDonationFormSchema = z.object({
-  pacienteId: z.number({
-    required_error: "ID do paciente é obrigatório"
+  patientId: z.number({
+    required_error: "Patient ID is required"
   }),
-  descricaoItem: z.string().min(1, "Descrição do item é obrigatória"),
-  quantidade: z.number().min(1, "Quantidade é obrigatória"),
-  unidade: z.string().optional(),
-  valorEstimado: z.string().optional(),
+  itemDescription: z.string().min(1, "Item description is required"),
+  quantity: z.number().min(1, "Quantity is required"),
+  unit: z.string().optional(),
+  estimatedValue: z.string().optional(),
   type: z.enum([
     "medicine",
     "supplies",
@@ -16,10 +16,10 @@ export const RegisterDonationFormSchema = z.object({
     "food",
     "clothes",
     "other"
-  ], { errorMap: () => ({ message: "Tipo inválido" }) }).optional(),
+  ], { errorMap: () => ({ message: "Invalid type" }) }).optional(),
   amount: z.string().optional(),
   status: z.enum(["pending", "received"], {
-    errorMap: () => ({ message: "Status inválido" })
+    errorMap: () => ({ message: "Invalid status" })
   }).optional(),
   patientName: z.string().optional(),
   createdAt: z.string().optional(),

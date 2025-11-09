@@ -1,3 +1,8 @@
+import { Appointment } from "./appointment";
+import { Donation } from "./donation";
+import { Loan } from "./loan";
+import { Workshop } from "./workshop";
+
 export type Patient = {
   id: number;
   name: string;
@@ -8,28 +13,20 @@ export type Patient = {
   address?: string;
   zipCode?: string;
   maritalStatus?: string;
-  spouse?: string;
-  children?: string;
+  spouse?: string; 
   type: string;
   status: string;
-  // Campos da API
-  nomeCompleto?: string;
-  dataNascimento?: string;
-  enderecoCompleto?: string;
-  telefone?: string;
-  estadoCivil?: string;
-  nomeEsposa?: string | null;
-  filhos?: Array<{ nome: string; idade: number }> | null;
-  atendimentos?: any[];
-  emprestimos?: any[];
-  doacoes?: any[];
-  oficinas?: any[];
+  spouseName?: string | null;
+  children?: Array<{ name: string; age: number }> | null;
+  appointments?: Appointment[];
+  loans?: Loan[];
+  donations?: Donation[];
+  workshops?: Workshop[];
   createdAt?: string;
-  cep?: string;
 };
 
 export enum PatientType {
-  cancer = "Oncologia",
-  family = "Familiar",
-  other = "Outro diagnóstico",
+  cancer = "Oncology",
+  family = "Family",
+  other = "Other diagnosis",
 }

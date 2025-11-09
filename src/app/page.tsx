@@ -45,10 +45,10 @@ export default function Home() {
 
   const totalAppointments = appointments.length;
   const totalDonations = donations.reduce(
-    (acc, donation) => acc + parseFloat(donation.amount),
+    (acc, donation) => acc + parseFloat(donation.amount ?? "0"),
     0
   );
-  const activeLoans = loans.filter((loan) => loan.status === "active").length;
+  const activeLoans = loans.filter((loan) => loan.status === "pending").length;
   const totalWorkshops = workshops.length;
   return (
     <>

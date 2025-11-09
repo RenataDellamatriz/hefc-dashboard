@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar } from "lucide-react";
+import { Badge, Calendar, Clock, User, Users } from "lucide-react";
 import { InfoCard } from "@/components/common/info-card";
 import { DashboardTable } from "@/components/common/dashboard-table";
 import { useEffect, useState } from "react";
@@ -34,6 +34,7 @@ import {
 import { addWorkshop, getWorkshop } from "@/api/workshop";
 import { getPatient } from "@/api/patient";
 import { Patient } from "@/types/patient";
+import { DetailsModal } from "@/components/common/details-modal";
 
 const weekdayMap: Record<string, string> = {
   monday: "Segunda-feira",
@@ -63,7 +64,7 @@ const workshopsHeader = [
     label: "Horário de encerramento",
     key: "endTime",
   },
-  { label: "Participants", key: "participants" },
+  { label: "Participantes", key: "participantsCount" },
   {
     label: "Status",
     key: "status",
@@ -73,18 +74,25 @@ const workshopsHeader = [
 
 const defaultValues: RegisterWorkshopFormValues = {
   name: "",
-  weekday: "",
+  weekday: "monday",
+  description: "",
   startTime: "",
   endTime: "",
-  participants: 0,
+  participantsCount: 0,
+  participants: [],
   status: "active",
 };
+
 const Workshops = () => {
   const [filter, setFilter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [workshopsList, setWorkshopsList] = useState<Workshop[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(
+    null
+  );
+  const [selectedPatientIds, setSelectedPatientIds] = useState<number[]>([]);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const form = useForm<RegisterWorkshopFormValues>({
     resolver: zodResolver(RegisterWorkshopFormSchema),
@@ -134,13 +142,34 @@ const Workshops = () => {
     getPatientsList();
   }, []);
 
+  const handlePatientSelect = (patientId: number) => {
+    setSelectedPatientIds((prev) => {
+      if (prev.includes(patientId)) {
+        return prev.filter((id) => id !== patientId);
+      } else {
+        return [...prev, patientId];
+      }
+    });
+  };
+
+  console.log("form errors", form.formState.errors);
+  console.log("selectedPatientIds", selectedPatientIds);
+
   async function handleFormSubmit(data: RegisterWorkshopFormValues) {
     try {
       setIsLoading(true);
-      const response = await addWorkshop(data);
+
+      const workshopData = {
+        ...data,
+        participants: selectedPatientIds.map((id) => ({ id })),
+        participantsCount: selectedPatientIds.length,
+      };
+
+      const response = await addWorkshop(workshopData);
       if (response) {
         toast.success("Oficina criada com sucesso!");
         form.reset();
+        setSelectedPatientIds([]);
         getList();
       }
     } catch (error) {
@@ -149,6 +178,10 @@ const Workshops = () => {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    form.setValue("participantsCount", selectedPatientIds.length);
+  }, [selectedPatientIds, form]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -162,11 +195,11 @@ const Workshops = () => {
         <InfoCard
           title="Participantes"
           value={workshopsList.reduce(
-            (acc, curr) => acc + curr.participants,
+            (acc, curr) => acc + (curr.participantsCount ?? 0),
             0
           )}
           description="Ativos"
-          icon={<Calendar size={24} />}
+          icon={<User size={24} />}
         />
         <InfoCard
           title="Oficinas ativas"
@@ -190,30 +223,274 @@ const Workshops = () => {
             searchFilter={filter}
             setSearchFilter={setFilter}
             title="Oficinas"
+            onDetailsClick={(item) => {
+              const workshop = workshopsList.find((l) => l.id === item.id);
+              if (workshop) {
+                setSelectedWorkshop(workshop);
+                setIsDetailsModalOpen(true);
+              }
+            }}
           />
+          <DetailsModal
+            open={isDetailsModalOpen}
+            onOpenChange={setIsDetailsModalOpen}
+            title={`Detalhes da Oficina - ${selectedWorkshop?.name}`}
+          >
+            {selectedWorkshop && (
+              <div className="space-y-6">
+                {/* Informações Básicas */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">
+                    Informações da Oficina
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Nome
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedWorkshop.name}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Dia da Semana
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {weekdayMap[selectedWorkshop.weekday] ||
+                          selectedWorkshop.weekday}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Horário de Início
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedWorkshop.startTime}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Horário de Término
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedWorkshop.endTime}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Status
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {statusMap[selectedWorkshop.status] ||
+                          selectedWorkshop.status}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Número de Participantes
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {selectedWorkshop.participantsCount || 0}
+                      </p>
+                    </div>
+                    {selectedWorkshop.createdAt && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700">
+                          Data de Criação
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {new Date(
+                            selectedWorkshop.createdAt
+                          ).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status da Oficina */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        selectedWorkshop.status === "active"
+                          ? "bg-green-500"
+                          : selectedWorkshop.status === "inactive"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                    />
+                    <span className="text-sm font-medium">
+                      Status:{" "}
+                      {statusMap[selectedWorkshop.status] ||
+                        selectedWorkshop.status}
+                    </span>
+                  </div>
+                  {selectedWorkshop.status === "active" && (
+                    <Badge className="bg-green-100 text-green-800">Ativa</Badge>
+                  )}
+                  {selectedWorkshop.status === "inactive" && (
+                    <Badge className="bg-yellow-100 text-yellow-800">
+                      Inativa
+                    </Badge>
+                  )}
+                  {selectedWorkshop.status === "cancelled" && (
+                    <Badge className="bg-red-100 text-red-800">Cancelada</Badge>
+                  )}
+                </div>
+
+                {/* Descrição */}
+                {selectedWorkshop.description && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Descrição</h3>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                      {selectedWorkshop.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Informações Adicionais */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">
+                    Informações Adicionais
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-gray-500" />
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700">
+                          Duração
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {selectedWorkshop.startTime &&
+                          selectedWorkshop.endTime
+                            ? `${selectedWorkshop.startTime} - ${selectedWorkshop.endTime}`
+                            : "Horário não definido"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users size={16} className="text-gray-500" />
+                      <div>
+                        <label className="text-sm font-semibold text-gray-700">
+                          Total de Participantes
+                        </label>
+                        <p className="text-sm text-gray-900">
+                          {selectedWorkshop.participants?.length || 0}{" "}
+                          participantes
+                        </p>
+                      </div>
+                    </div>
+                    {selectedWorkshop.updatedAt && (
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-gray-500" />
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700">
+                            Última Atualização
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {new Date(
+                              selectedWorkshop.updatedAt
+                            ).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lista de Participantes */}
+                {selectedWorkshop.participants &&
+                  selectedWorkshop.participants.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">
+                        Participantes ({selectedWorkshop.participants.length})
+                      </h3>
+                      <div className="max-h-60 overflow-y-auto border rounded-md">
+                        <div className="divide-y">
+                          {selectedWorkshop.participants.map(
+                            (participant, index) => (
+                              <div
+                                key={participant.id || index}
+                                className="p-3 hover:bg-gray-50"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span>{index + 1}.</span>
+                                    <p className="font-medium text-sm">
+                                      {participant.name || "Nome não informado"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            )}
+          </DetailsModal>
           {selectedWorkshop && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Oficinas do Paciente - {selectedWorkshop.name}</CardTitle>
+                <CardTitle>
+                  Detalhes da Oficina - {selectedWorkshop.name}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {workshopsList
-                    .filter((w) => w.patientIds && w.patientIds.length > 0)
-                    .map((workshop) => (
-                      <div key={workshop.id} className="border-b pb-2">
-                        <p className="text-sm">
-                          <strong>{workshop.name}</strong> - {workshop.weekday} das{" "}
-                          {workshop.startTime} às {workshop.endTime}
-                        </p>
-                        {workshop.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {workshop.description}
-                          </p>
-                        )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">
+                      Informações da Oficina
+                    </h4>
+                    <p>
+                      <strong>Nome:</strong> {selectedWorkshop.name}
+                    </p>
+                    <p>
+                      <strong>Dia:</strong>{" "}
+                      {weekdayMap[selectedWorkshop.weekday]}
+                    </p>
+                    <p>
+                      <strong>Horário:</strong> {selectedWorkshop.startTime} às{" "}
+                      {selectedWorkshop.endTime}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      {statusMap[selectedWorkshop.status]}
+                    </p>
+                    <p>
+                      <strong>Participantes:</strong>{" "}
+                      {selectedWorkshop.participantsCount}
+                    </p>
+                  </div>
+
+                  {selectedWorkshop.participants &&
+                    selectedWorkshop.participants.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Participantes</h4>
+                        <div className="space-y-2">
+                          {selectedWorkshop.participants.map((participant) => (
+                            <div key={participant.id} className="border-b pb-2">
+                              <p className="text-sm">
+                                <strong>Nome:</strong>{" "}
+                                {participant.name || "N/A"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
                 </div>
+
+                {selectedWorkshop.description && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold mb-2">Descrição</h4>
+                    <p>{selectedWorkshop.description}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -243,7 +520,7 @@ const Workshops = () => {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <FormField
                       control={form.control}
                       name="weekday"
@@ -309,22 +586,6 @@ const Workshops = () => {
                         </FormItem>
                       )}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="participants"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Participantes</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} min={0} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}
@@ -337,7 +598,7 @@ const Workshops = () => {
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger className="w-full">
                                 <SelectValue
                                   placeholder="Selecione o status"
                                   className="w-full"
@@ -356,6 +617,57 @@ const Workshops = () => {
                         </FormItem>
                       )}
                     />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Descrição" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Seletor de Participantes */}
+                  <div>
+                    <h3 className="font-semibold mb-2 mt-2 border-t pt-4">
+                      Participantes
+                    </h3>
+                    <div className="space-y-3">
+                      {/* Lista de pacientes disponíveis */}
+                      <div>
+                        <p className="text-sm font-medium mb-2">
+                          Selecionar pacientes:
+                        </p>
+                        <div className="max-h-40 overflow-y-auto border rounded-md p-2">
+                          {patients.map((patient) => (
+                            <div
+                              key={patient.id}
+                              className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
+                                selectedPatientIds.includes(patient.id)
+                                  ? "bg-blue-50 border border-blue-200"
+                                  : "hover:bg-gray-50"
+                              }`}
+                              onClick={() => handlePatientSelect(patient.id)}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedPatientIds.includes(
+                                  patient.id
+                                )}
+                                onChange={() => {}}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm">{patient.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <Button type="submit" isLoading={isLoading}>
