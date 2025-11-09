@@ -1,5 +1,18 @@
 export type LoanStatus = "pending" | "returned" | "overdue";
 
+export interface LoanContact {
+  id: number;
+  name: string;
+  cpf?: string;
+  zipCode?: string;
+  address?: string;
+  phone?: string;
+  relationship?: string;
+  loanId: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Loan {
   id: number;
   patientId: number;
@@ -14,4 +27,5 @@ export interface Loan {
   status: LoanStatus;
   createdAt: string;
   updatedAt?: string;
+  contacts: LoanContact[];
 }
