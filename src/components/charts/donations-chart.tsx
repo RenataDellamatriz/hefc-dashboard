@@ -35,7 +35,7 @@ const donationTypeLabels: Record<string, string> = {
 export function DonationsChart({ donations }: { donations: Donation[] }) {
   const translatedDonations = donations.map((donation) => ({
     ...donation,
-    type: donationTypeLabels[donation.type?.toLowerCase()] || donation.type,
+    type: donation.type && donationTypeLabels[donation.type?.toLowerCase()] || donation.type,
   }));
 
   const data = translatedDonations.reduce((acc, donation) => {
