@@ -3,30 +3,47 @@ import { Donation } from "./donation";
 import { Loan } from "./loan";
 import { Workshop } from "./workshop";
 
-export type Patient = {
+export enum PatientType {
+  FAMILY = 'family',
+  CANCER = 'cancer',
+  OTHER = 'other',
+}
+
+export enum PatientStatus {
+  ONGOING = 'ongoing',
+  COMPLETED = 'completed',
+}
+
+export interface Child {
+  name: string;
+  age: number;
+}
+
+export interface Patient {
   id: number;
   name: string;
+  type: PatientType;
+  status: PatientStatus;
+  birthDate?: string;
   cpf?: string;
   rg?: string;
-  birthDate?: string;
   phone?: string;
-  address?: string;
-  zipCode?: string;
   maritalStatus?: string;
-  spouse?: string; 
-  type: string;
-  status: string;
-  spouseName?: string | null;
-  children?: Array<{ name: string; age: number }> | null;
+  spouseName?: string;
+  children?: Child[];
+
+  // Endereço
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+
+  createdAt?: string;
   appointments?: Appointment[];
   loans?: Loan[];
   donations?: Donation[];
   workshops?: Workshop[];
-  createdAt?: string;
-};
-
-export enum PatientType {
-  cancer = "Oncology",
-  family = "Family",
-  other = "Other diagnosis",
 }

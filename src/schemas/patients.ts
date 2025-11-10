@@ -1,27 +1,32 @@
+import { PatientStatus, PatientType } from "@/types/patient";
 import { z } from "zod";
 
-const childSchema = z.object({
-  name: z.string().min(1, "Child name is required"),
-  age: z.number().min(0, "Age must be greater than or equal to zero"),
+export const ChildSchema = z.object({
+  name: z.string().min(1, 'Nome da criança é obrigatório'),
+  age: z.number().min(0, 'Idade deve ser maior ou igual a 0'),
 });
 
 export const RegisterPatientFormSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  type: z.enum(["cancer", "family", "other"], {
-    required_error: "Select patient type",
-  }),
-  status: z.enum(["ongoing", "completed"], {
-    required_error: "Select patient status",
-  }), 
-  birthDate: z.string().min(1, { message: "Birth date is required" }),
-  cpf: z.string().min(1, { message: "CPF is required" }),
-  rg: z.string().min(1, { message: "RG is required" }),
-  address: z.string().min(1, { message: "Full address is required" }),
-  zipCode: z.string().min(1, { message: "ZIP code is required" }),
-  phone: z.string().min(1, { message: "Phone is required" }),
-  maritalStatus: z.string().min(1, { message: "Marital status is required" }),
+  name: z.string().min(1, 'Nome é obrigatório'),
+  type: z.nativeEnum(PatientType),
+  status: z.nativeEnum(PatientStatus),
+  birthDate: z.string().optional(),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  phone: z.string().optional(),
+  maritalStatus: z.string().optional(),
   spouseName: z.string().optional(),
-  children: z.array(childSchema).optional(),
+  children: z.array(ChildSchema).optional(),
+
+  // Endereço
+  zipCode: z.string().optional(),
+  street: z.string().optional(),
+  number: z.string().optional(),
+  complement: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 
 export type RegisterPatientFormValues = z.infer<typeof RegisterPatientFormSchema>;
+export type ChildFormValues = z.infer<typeof ChildSchema>;

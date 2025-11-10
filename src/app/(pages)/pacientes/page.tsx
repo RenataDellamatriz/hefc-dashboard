@@ -18,12 +18,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { InfoCard } from "@/components/common/info-card";
 import { DashboardTable } from "@/components/common/dashboard-table";
 import { useEffect, useState } from "react";
 import { addPatient, getPatient } from "@/api/patient";
-import { Patient } from "@/types/patient";
+import { Patient, PatientStatus, PatientType } from "@/types/patient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -39,20 +39,35 @@ import { Appointment } from "@/types/appointment";
 import { Loan } from "@/types/loan";
 import { Donation } from "@/types/donation";
 import { Workshop } from "@/types/workshop";
-import {
-  cpfMask,
-  cpfReplacement,
-  rgMask,
-  rgReplacement,
-  phoneMask,
-  phoneReplacement,
-  cepMask,
-  cepReplacement,
-} from "@/lib/masks";
 import { DetailsModal } from "@/components/common/details-modal";
 import { getPatientReport } from "@/api/report";
 import { formatToBRL } from "@/lib/utils";
 import { SecondaryInfoCard } from "@/components/common/secondary-info-card";
+
+// Funções de máscara
+const maskCPF = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1');
+};
+
+const maskPhone = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d)/, '$1-$2')
+    .replace(/(-\d{4})\d+?$/, '$1');
+};
+
+const maskCEP = (value: string) => {
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{5})(\d)/, '$1-$2')
+    .replace(/(-\d{3})\d+?$/, '$1');
+};
 
 const typeLabels: Record<string, string> = {
   cancer: "Oncologia",
@@ -64,6 +79,7 @@ const statusLabels: Record<string, string> = {
   ongoing: "Em Tratamento",
   completed: "Finalizado",
 };
+
 const weekdayMap: Record<string, string> = {
   monday: "Segunda-feira",
   tuesday: "Terça-feira",
@@ -87,19 +103,35 @@ const patientsHeader = [
   { label: "Mais detalhes", key: "details" },
 ];
 
+// Tipo para a resposta da API de CEP
+interface ViaCEPResponse {
+  cep: string;
+  logradouro: string;
+  complemento: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  erro?: boolean;
+}
+
 const defaultValues: RegisterPatientFormValues = {
   name: "",
   cpf: "",
   rg: "",
   birthDate: "",
   phone: "",
-  address: "",
   zipCode: "",
+  street: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
   maritalStatus: "single",
   spouseName: "",
   children: [],
-  type: "cancer",
-  status: "ongoing",
+  type: PatientType.CANCER,
+  status: PatientStatus.ONGOING,
 };
 
 const Patients = () => {
@@ -115,11 +147,59 @@ const Patients = () => {
   const [selectedPatientDetails, setSelectedPatientDetails] =
     useState<Patient | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isLoadingCEP, setIsLoadingCEP] = useState(false);
 
   const form = useForm<RegisterPatientFormValues>({
     resolver: zodResolver(RegisterPatientFormSchema),
     defaultValues,
   });
+
+  // Função para buscar CEP
+  const fetchCEP = async (cep: string) => {
+    const cleanCEP = cep.replace(/\D/g, "");
+
+    if (cleanCEP.length !== 8) return;
+
+    setIsLoadingCEP(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+      const data: ViaCEPResponse = await response.json();
+
+      if (data.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+
+      // Preenche os campos de endereço automaticamente
+      form.setValue("street", data.logradouro || "");
+      form.setValue("complement", data.complemento || "");
+      form.setValue("neighborhood", data.bairro || "");
+      form.setValue("city", data.localidade || "");
+      form.setValue("state", data.uf || "");
+
+      // Foca no campo número após preencher o CEP
+      const numberInput = document.querySelector('input[name="number"]') as HTMLInputElement;
+      if (numberInput) {
+        numberInput.focus();
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(`Erro ao buscar CEP ${cleanCEP}: ${error.message}`);
+
+      console.error(error);
+    } finally {
+      setIsLoadingCEP(false);
+    }
+  };
+
+  // Monitora mudanças no CEP
+  const watchedCEP = form.watch("zipCode");
+  useEffect(() => {
+    if (watchedCEP && watchedCEP.replace(/\D/g, "").length === 8) {
+      fetchCEP(watchedCEP);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedCEP]);
 
   const translatedPatientList = patientsList.map((patient) => ({
     ...patient,
@@ -200,7 +280,7 @@ const Patients = () => {
       const response = await addPatient(submitData);
       if (response) {
         toast.success("Paciente cadastrado com sucesso!");
-        form.reset();
+        form.reset(defaultValues);
         setNoSpouse(false);
         setNoChildren(false);
         getPatientsList();
@@ -388,26 +468,6 @@ const Patients = () => {
                         </p>
                       </div>
                     )}
-                    {selectedPatientDetails.zipCode && (
-                      <div>
-                        <label className="text-sm font-semibold text-gray-700">
-                          CEP
-                        </label>
-                        <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.zipCode}
-                        </p>
-                      </div>
-                    )}
-                    {selectedPatientDetails.address && (
-                      <div className="col-span-2">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Endereço
-                        </label>
-                        <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.address}
-                        </p>
-                      </div>
-                    )}
                     {selectedPatientDetails.maritalStatus && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
@@ -421,15 +481,13 @@ const Patients = () => {
                         </p>
                       </div>
                     )}
-                    {(selectedPatientDetails.spouseName ||
-                      selectedPatientDetails.spouse) && (
+                    {(selectedPatientDetails.spouseName) && (
                       <div>
                         <label className="text-sm font-semibold text-gray-700">
                           Cônjuge
                         </label>
                         <p className="text-sm text-gray-900">
-                          {selectedPatientDetails.spouseName ||
-                            selectedPatientDetails.spouse}
+                          {selectedPatientDetails.spouseName}
                         </p>
                       </div>
                     )}
@@ -447,6 +505,58 @@ const Patients = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Endereço */}
+                {(selectedPatientDetails.zipCode || selectedPatientDetails.street) && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Endereço</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedPatientDetails.zipCode && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700">
+                            CEP
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPatientDetails.zipCode}
+                          </p>
+                        </div>
+                      )}
+                      {selectedPatientDetails.street && (
+                        <div className="col-span-2">
+                          <label className="text-sm font-semibold text-gray-700">
+                            Logradouro
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPatientDetails.street}
+                            {selectedPatientDetails.number && `, ${selectedPatientDetails.number}`}
+                            {selectedPatientDetails.complement && ` - ${selectedPatientDetails.complement}`}
+                          </p>
+                        </div>
+                      )}
+                      {selectedPatientDetails.neighborhood && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700">
+                            Bairro
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPatientDetails.neighborhood}
+                          </p>
+                        </div>
+                      )}
+                      {selectedPatientDetails.city && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700">
+                            Cidade
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPatientDetails.city}
+                            {selectedPatientDetails.state && ` - ${selectedPatientDetails.state}`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Filhos */}
                 {selectedPatientDetails.children &&
@@ -679,8 +789,9 @@ const Patients = () => {
                   onSubmit={form.handleSubmit((data) => {
                     handleFormSubmit(data);
                   })}
-                  className="grid gap-4"
+                  className="space-y-6"
                 >
+                  {/* Dados Pessoais */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Dados Pessoais</h3>
                     <FormField
@@ -707,9 +818,12 @@ const Patients = () => {
                             <FormControl>
                               <Input
                                 placeholder="000.000.000-00"
-                                mask={cpfMask}
-                                replacement={cpfReplacement}
                                 {...field}
+                                onChange={(e) => {
+                                  const maskedValue = maskCPF(e.target.value);
+                                  field.onChange(maskedValue);
+                                }}
+                                maxLength={14}
                               />
                             </FormControl>
                             <FormMessage />
@@ -724,9 +838,7 @@ const Patients = () => {
                             <FormLabel>RG</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="00.000.000-0"
-                                mask={rgMask}
-                                replacement={rgReplacement}
+                                placeholder="RG"
                                 {...field}
                               />
                             </FormControl>
@@ -759,9 +871,12 @@ const Patients = () => {
                             <FormControl>
                               <Input
                                 placeholder="(00) 00000-0000"
-                                mask={phoneMask}
-                                replacement={phoneReplacement}
                                 {...field}
+                                onChange={(e) => {
+                                  const maskedValue = maskPhone(e.target.value);
+                                  field.onChange(maskedValue);
+                                }}
+                                maxLength={15}
                               />
                             </FormControl>
                             <FormMessage />
@@ -799,8 +914,13 @@ const Patients = () => {
                         )}
                       />
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Endereço */}
+                  <div className="space-y-4 border-t pt-6">
+                    <h3 className="text-lg font-semibold">Endereço</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <FormField
                         control={form.control}
                         name="zipCode"
@@ -808,10 +928,57 @@ const Patients = () => {
                           <FormItem>
                             <FormLabel>CEP</FormLabel>
                             <FormControl>
+                              <div className="relative">
+                                <Input
+                                  placeholder="00000-000"
+                                  {...field}
+                                  onChange={(e) => {
+                                    const maskedValue = maskCEP(e.target.value);
+                                    field.onChange(maskedValue);
+                                  }}
+                                  maxLength={9}
+                                />
+                                {isLoadingCEP && (
+                                  <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin" />
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estado</FormLabel>
+                            <FormControl>
                               <Input
-                                placeholder="00000-000"
-                                mask={cepMask}
-                                replacement={cepReplacement}
+                                placeholder="UF"
+                                {...field}
+                                maxLength={2}
+                                className="uppercase"
+                                onChange={(e) =>
+                                  field.onChange(e.target.value.toUpperCase())
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Cidade"
                                 {...field}
                               />
                             </FormControl>
@@ -819,15 +986,69 @@ const Patients = () => {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Logradouro</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Rua, Avenida, etc."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <FormField
                         control={form.control}
-                        name="address"
+                        name="number"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Endereço</FormLabel>
+                            <FormLabel>Número (opcional)</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Endereço completo"
+                                placeholder="Número"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="complement"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Complemento (opcional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Apto, Bloco, etc."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="neighborhood"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bairro</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Bairro"
                                 {...field}
                               />
                             </FormControl>
@@ -838,7 +1059,8 @@ const Patients = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Informações Familiares */}
+                  <div className="space-y-4 border-t pt-6">
                     <h3 className="text-lg font-semibold">
                       Informações Familiares
                     </h3>
